@@ -46,8 +46,9 @@ const v$ = useVuelidate(rules, { email, password });
 
 // Función de login
 const handleLogin = async () => {
-  v$.value.$touch(); // Marca todos los campos como tocados
+  console.log('👉 handleLogin ejecutado');
 
+  v$.value.$touch();
   if (v$.value.$invalid) return;
 
   try {
@@ -56,21 +57,20 @@ const handleLogin = async () => {
       password: password.value
     });
 
-    localStorage.setItem('user', JSON.stringify(response.data));
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
 
-    // Modal de éxito
     await Swal.fire({
       icon: 'success',
       title: '¡Login exitoso!',
-      text: `Bienvenido ${response.data.name}`,
-      timer: 1500,
+      text: `Bienvenido ${response.data.user.name}`,
+      timer: 1000,
       showConfirmButton: false
     });
 
     router.push('/users');
 
   } catch (err) {
-    // Modal de error
     Swal.fire({
       icon: 'error',
       title: 'Error en el login',
@@ -78,6 +78,7 @@ const handleLogin = async () => {
     });
   }
 };
+
 </script>
 
 <style scoped>
