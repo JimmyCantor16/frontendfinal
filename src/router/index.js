@@ -3,8 +3,17 @@ import LoginForm from '../components/LoginForm.vue';
 import UserList from '../components/UserList.vue';
 
 const routes = [
-  { path: '/', name: 'Login', component: LoginForm },
-  { path: '/users', name: 'Users', component: UserList, meta: { requiresAuth: true } }
+  {
+    path: '/',
+    name: 'login',
+    component: LoginForm
+  },
+  {
+    path: '/users',
+    name: 'users',
+    component: UserList,
+    meta: { requiresAuth: true } // 👈 AQUÍ
+  }
 ];
 
 const router = createRouter({
@@ -12,12 +21,12 @@ const router = createRouter({
   routes
 });
 
-// 🔑 Navigation Guard
+// 🔐 Guard global
 router.beforeEach((to, from, next) => {
-  const user = localStorage.getItem('user');
+  const token = localStorage.getItem('token');
 
-  if (to.meta.requiresAuth && !user) {
-    next({ path: '/' });
+  if (to.meta.requiresAuth && !token) {
+    next('/');
   } else {
     next();
   }
