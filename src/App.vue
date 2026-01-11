@@ -1,77 +1,44 @@
 <template>
   <div id="app">
-    <header>
+    <header class="app-header">
       <h1>Mi App</h1>
-      <!-- Mostrar logout solo si estamos logueados y en UserList -->
-      <button v-if="showLogout" @click="logout">Cerrar sesión</button>
+      <button v-if="authStore.isAuthenticated" @click="logout">Cerrar Sesión</button>
     </header>
 
-    <main>
-      <router-view></router-view>
-    </main>
+    <router-view />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
+const authStore = useAuthStore();
 const router = useRouter();
-const route = useRoute();
 
-// Computed que indica si hay sesión activa
-const isLoggedIn = computed(() => !!localStorage.getItem('user'));
-
-// Computed que indica si se debe mostrar el botón logout
-const showLogout = computed(() => {
-  // Solo mostramos logout si el usuario está logueado y no está en login
-  return isLoggedIn.value && route.path === '/users';
-});
-
-const logout = () => {
-  localStorage.removeItem('user');
+const logout = async () => {
+  await authStore.logout();
   router.push('/');
 };
 </script>
 
 <style>
-#app {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  text-align: center;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-header {
-  background-color: #4f46e5;
-  color: white;
-  padding: 20px 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+#app { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  background-color: #4f46e5;
+  color: white;
+  padding: 10px 20px;
 }
-
-main {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
 button {
   padding: 6px 12px;
-  background-color: #ef4444;
+  background: #ef4444;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
-
-button:hover {
-  background-color: #b91c1c;
-}
+button:hover { background: #b91c1c; }
 </style>
