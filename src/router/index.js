@@ -1,36 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginForm from '@/components/LoginForm.vue'; // usa @ en lugar de ../
+import LoginForm from '@/components/LoginForm.vue';
 import UserList from '@/components/UserList.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const routes = [
-  {
-    path: '/',
-    name: 'login',
-    component: LoginForm
-  },
-  {
-    path: '/users',
-    name: 'users',
+  { path: '/', redirect: '/login' },
+  { path: '/login', component: LoginForm },
+  { 
+    path: '/users', 
     component: UserList,
-    meta: { requiresAuth: true } // requiere token
+    beforeEnter: (to, from, next) => {
+      const auth = useAuthStore();
+      if (!auth.isAuthenticated) return next('/login');
+      next();
+    }
   }
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes
-});
-
-// Guard global para proteger rutas
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-
-  if (to.meta.requiresAuth && !token) {
-    // si la ruta requiere autenticación y no hay token
-    return next('/'); // redirige a login
-  }
-
-  next(); // continuar si hay token o no se requiere autenticación
 });
 
 export default router;

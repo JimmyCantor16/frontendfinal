@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api',
-  headers: { Accept: 'application/json' }
+  headers: { Accept: 'application/json' },
 });
 
 // Agrega token automáticamente a cada request
@@ -19,7 +19,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/';
+      window.location.href = '/login';
     }
     return Promise.reject(err);
   }

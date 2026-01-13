@@ -24,13 +24,13 @@ const fetchUsers = async () => {
     const { data } = await api.get('/users');
     users.value = data;
   } catch (err) {
-    await authStore.logout();
-    router.push('/');
+    authStore.logout();
+    router.push('/login');
   }
 };
 
 onMounted(() => {
-  if (!authStore.isAuthenticated) router.push('/');
+  if (!authStore.isAuthenticated) router.push('/login');
   else fetchUsers();
 });
 </script>
