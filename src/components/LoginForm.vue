@@ -1,19 +1,25 @@
 <template>
   <div class="login-container">
     <h2>Iniciar sesión</h2>
+
     <form @submit.prevent="onSubmit">
       <div>
         <label>Email</label>
         <input v-model="email" type="email" required />
       </div>
+
       <div>
         <label>Contraseña</label>
         <input v-model="password" type="password" required />
       </div>
+
       <button type="submit" :disabled="loading">
         {{ loading ? 'Ingresando...' : 'Login' }}
       </button>
-      <p v-if="errorMessage" style="color:red">{{ errorMessage }}</p>
+
+      <p v-if="errorMessage" style="color:red">
+        {{ errorMessage }}
+      </p>
     </form>
   </div>
 </template>
@@ -33,32 +39,32 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const onSubmit = async () => {
-  console.log("Iniciando login...");
   loading.value = true;
   errorMessage.value = '';
 
   try {
-    const result = await auth.login({ email: email.value, password: password.value });
+    // 🔹 LOGIN (no usamos return)
+    await auth.login({
+      email: email.value,
+      password: password.value
+    });
 
-    // Mostrar mensaje de bienvenida
+    // 🔹 Mensaje usando el STORE (forma correcta)
     Swal.fire({
       icon: 'success',
       title: '¡Bienvenido!',
-      text: `Hola ${result.user.name}`,
+      text: `Hola ${auth.user.name}`,
       timer: 1500,
       showConfirmButton: false
     });
 
-    // 🔹 Debug: mostrar token y usuario
-    console.log("Login exitoso:", result);
-    console.log("Token en localStorage:", localStorage.getItem('token'));
-    console.log("Usuario en localStorage:", localStorage.getItem('user'));
-
-    // 🔹 Redirigir a UserList.vue
+    // 🔹 Redirigir
     router.push('/users');
+
   } catch (err) {
-    console.error("Error login:", err.response?.data || err);
-    errorMessage.value = err.response?.data?.message || 'Error de login';
+    console.error('Error login:', err);
+    errorMessage.value =
+      err.response?.data?.message || 'Credenciales inválidas';
   } finally {
     loading.value = false;
   }
@@ -74,6 +80,7 @@ const onSubmit = async () => {
   border-radius: 10px;
   background-color: #f9f9f9;
 }
+
 input {
   width: 100%;
   padding: 8px;
@@ -82,6 +89,7 @@ input {
   border-radius: 4px;
   border: 1px solid #ccc;
 }
+
 button {
   width: 100%;
   padding: 10px;
@@ -91,6 +99,7 @@ button {
   border-radius: 5px;
   cursor: pointer;
 }
+
 button[disabled] {
   background-color: #aaa;
   cursor: not-allowed;
