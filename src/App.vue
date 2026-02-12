@@ -11,7 +11,14 @@
       </button>
     </header>
 
-    <router-view />
+    <div class="app-body" v-if="authStore.isAuthenticated">
+      <AppSidebar />
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
+
+    <router-view v-else />
   </div>
 </template>
 
@@ -20,6 +27,7 @@ import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import Swal from 'sweetalert2';
+import AppSidebar from '@/components/AppSidebar.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -28,7 +36,6 @@ let idleTimer;
 
 const startIdleTimer = () => {
   clearTimeout(idleTimer);
-  // 1 minuto 1 segundo = 61000ms
   idleTimer = setTimeout(async () => {
     await Swal.fire({
       icon: 'warning',
@@ -73,6 +80,18 @@ const handleLogout = () => {
   background-color: #4f46e5;
   color: white;
   padding: 10px 20px;
+}
+
+.app-body {
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: calc(100vh - 46px);
+  overflow-y: auto;
 }
 
 .logout-btn {
