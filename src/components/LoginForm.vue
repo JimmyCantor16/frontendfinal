@@ -65,7 +65,7 @@ const onSubmit = async () => {
       showConfirmButton: false,
     })
 
-    router.push('/users')
+    router.push('/dashboard')
   } catch (err) {
     console.error(err)
     errorMessage.value =
