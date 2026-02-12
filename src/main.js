@@ -1,15 +1,11 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import router from './router';
-import { createPinia } from 'pinia';
-import { initInactivityControl } from '@/plugins/inactivity'
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import { createPinia } from 'pinia'
 
-createApp(App)
-  .use(createPinia())
-  .use(router)
-  .mount('#app');
+const app = createApp(App)
 
-  if (localStorage.getItem('token')) {
-    initInactivityControl()
-  }
-  
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')

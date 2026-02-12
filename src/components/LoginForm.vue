@@ -3,21 +3,17 @@
     <h2>Iniciar sesión</h2>
 
     <form @submit.prevent="onSubmit">
-      <div>
-        <label>Email</label>
-        <input v-model="email" type="email" required />
-      </div>
+      <label>Email</label>
+      <input v-model.trim="email" type="email" required />
 
-      <div>
-        <label>Contraseña</label>
-        <input v-model="password" type="password" required />
-      </div>
+      <label>Contraseña</label>
+      <input v-model="password" type="password" required />
 
       <button type="submit" :disabled="loading">
         {{ loading ? 'Ingresando...' : 'Login' }}
       </button>
 
-      <p v-if="errorMessage" style="color:red">
+      <p v-if="errorMessage" class="error">
         {{ errorMessage }}
       </p>
     </form>
@@ -25,83 +21,84 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import Swal from 'sweetalert2';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import Swal from 'sweetalert2'
 
-const email = ref('');
-const password = ref('');
-const loading = ref(false);
-const errorMessage = ref('');
+const email = ref('')
+const password = ref('')
+const loading = ref(false)
+const errorMessage = ref('')
 
-const router = useRouter();
-const auth = useAuthStore();
+const router = useRouter()
+const auth = useAuthStore()
 
 const onSubmit = async () => {
-  loading.value = true;
-  errorMessage.value = '';
+  loading.value = true
+  errorMessage.value = ''
 
   try {
-    // 🔹 LOGIN (no usamos return)
     await auth.login({
       email: email.value,
-      password: password.value
-    });
+      password: password.value,
+    })
 
-    // 🔹 Mensaje usando el STORE (forma correcta)
     Swal.fire({
       icon: 'success',
       title: '¡Bienvenido!',
-      text: `Hola ${auth.user.name}`,
-      timer: 1500,
-      showConfirmButton: false
-    });
+      timer: 1200,
+      showConfirmButton: false,
+    })
 
-    // 🔹 Redirigir
-    router.push('/users');
-
+    router.push('/users')
   } catch (err) {
-    console.error('Error login:', err);
+    console.error(err)
     errorMessage.value =
-      err.response?.data?.message || 'Credenciales inválidas';
+      err.response?.data?.message || err.message || 'Error de login'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>
+
+
+
 
 <style scoped>
 .login-container {
-  max-width: 400px;
+  max-width: 420px;
   margin: 80px auto;
   padding: 30px;
-  border: 1px solid #ccc;
+  background: #f9f9f9;
   border-radius: 10px;
-  background-color: #f9f9f9;
+}
+
+label {
+  font-weight: bold;
 }
 
 input {
   width: 100%;
   padding: 8px;
-  margin: 5px 0 15px 0;
-  box-sizing: border-box;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  margin: 6px 0 14px;
 }
 
 button {
   width: 100%;
   padding: 10px;
-  background-color: #42b983;
-  color: white;
+  background: #42b983;
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  color: white;
+  border-radius: 6px;
 }
 
-button[disabled] {
-  background-color: #aaa;
-  cursor: not-allowed;
+button:disabled {
+  background: #aaa;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
 }
 </style>
