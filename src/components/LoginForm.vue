@@ -34,14 +34,28 @@ const errorMessage = ref('')
 const router = useRouter()
 const auth = useAuthStore()
 
+const getRecaptchaToken = () => {
+  return new Promise((resolve, reject) => {
+    window.grecaptcha.ready(() => {
+      window.grecaptcha
+        .execute(process.env.VUE_APP_RECAPTCHA_SITE_KEY, { action: 'login' })
+        .then(resolve)
+        .catch(reject)
+    })
+  })
+}
+
 const onSubmit = async () => {
   loading.value = true
   errorMessage.value = ''
 
   try {
+    const recaptchaToken = await getRecaptchaToken()
+
     await auth.login({
       email: email.value,
       password: password.value,
+      recaptcha_token: recaptchaToken,
     })
 
     Swal.fire({
