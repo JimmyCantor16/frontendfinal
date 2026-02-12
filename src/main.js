@@ -1,7 +1,11 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import router from './router';
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import { createPinia } from 'pinia'
 
-createApp(App)
-  .use(router)      // necesario para que las rutas funcionen
-  .mount('#app');   // debe coincidir con div id="app"
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')
