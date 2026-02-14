@@ -1,109 +1,32 @@
 <template>
-  <div id="app">
-    <header class="app-header">
-      <h1>Mi App</h1>
-      <button
-        v-if="authStore.isAuthenticated"
-        class="logout-btn"
-        @click="handleLogout"
-      >
-        Cerrar Sesión
-      </button>
-    </header>
-
-    <div class="app-body" v-if="authStore.isAuthenticated">
-      <AppSidebar />
-      <main class="main-content">
-        <router-view />
-      </main>
-    </div>
-
-    <router-view v-else />
-  </div>
+  <v-app>
+    <component :is="layout">
+      <router-view />
+    </component>
+  </v-app>
 </template>
 
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import Swal from 'sweetalert2';
-import AppSidebar from '@/components/AppSidebar.vue';
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@modules/auth/store/auth.store'
+import DefaultLayout from '@/app/layouts/DefaultLayout.vue'
+import AuthLayout from '@/app/layouts/AuthLayout.vue'
 
-const authStore = useAuthStore();
-const router = useRouter();
+const route = useRoute()
+const authStore = useAuthStore()
 
-let idleTimer;
+const layouts: Record<string, typeof DefaultLayout | typeof AuthLayout> = {
+  default: DefaultLayout,
+  auth: AuthLayout,
+}
 
-const startIdleTimer = () => {
-  clearTimeout(idleTimer);
-  idleTimer = setTimeout(async () => {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Sesión expirada',
-      text: 'Por inactividad se cerrará la sesión',
-      timer: 3000,
-      showConfirmButton: false
-    });
-    authStore.logout();
-    router.push('/');
-  }, 61000);
-};
-
-const resetIdleTimer = () => startIdleTimer();
+const layout = computed(() => {
+  const name = (route.meta.layout as string) || 'default'
+  return layouts[name] || DefaultLayout
+})
 
 onMounted(() => {
-  if (authStore.isAuthenticated) {
-    startIdleTimer();
-    window.addEventListener('mousemove', resetIdleTimer);
-    window.addEventListener('keydown', resetIdleTimer);
-  }
-});
-
-const handleLogout = () => {
-  authStore.logout();
-  router.push('/');
-  clearTimeout(idleTimer);
-};
+  authStore.restoreInactivity()
+})
 </script>
-
-<style>
-#app {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #4f46e5;
-  color: white;
-  padding: 10px 20px;
-}
-
-.app-body {
-  display: flex;
-}
-
-.main-content {
-  flex: 1;
-  padding: 24px;
-  background: #f5f5f5;
-  min-height: calc(100vh - 46px);
-  overflow-y: auto;
-}
-
-.logout-btn {
-  padding: 6px 12px;
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.logout-btn:hover {
-  background: #b91c1c;
-}
-</style>
