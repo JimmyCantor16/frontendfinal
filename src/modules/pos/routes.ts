@@ -5,7 +5,7 @@ const routes: RouteRecordRaw[] = [
     path: '/pos',
     name: 'pos',
     component: () => import('./views/PosView.vue'),
-    meta: { requiresAuth: true, fullscreen: true },
+    meta: { requiresAuth: true, fullscreen: true, role: ['admin', 'cajero'] },
   },
 ]
 

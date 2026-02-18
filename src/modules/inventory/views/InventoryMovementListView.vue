@@ -8,7 +8,16 @@
     </div>
 
     <v-row class="mb-4" align="center">
-      <v-col cols="12" sm="4">
+      <v-col cols="12" sm="3">
+        <v-text-field
+          v-model="searchQuery"
+          prepend-inner-icon="mdi-magnify"
+          label="Buscar movimiento..."
+          single-line
+          hide-details
+        />
+      </v-col>
+      <v-col cols="12" sm="3">
         <v-select
           v-model="filterProduct"
           :items="productOptions"
@@ -63,13 +72,40 @@
         :items="filteredMovements"
         :items-per-page="10"
         no-data-text="No hay movimientos."
+        show-expand
       >
         <template #item.product="{ item }">{{ item.product?.name }}</template>
-        <template #item.user="{ item }">{{ item.user?.name }}</template>
         <template #item.type="{ item }">
-          <v-chip :color="typeColor(item.type)" size="small">{{ typeLabel(item.type) }}</v-chip>
+          <v-chip :color="typeColor(item.type)" size="small" variant="flat">
+            <v-icon start size="small">{{ typeIcon(item.type) }}</v-icon>
+            {{ typeLabel(item.type) }}
+          </v-chip>
         </template>
-        <template #item.created_at="{ item }">{{ formatDate(item.created_at) }}</template>
+        <template #item.quantity="{ item }">
+          <span :class="item.type === 'sale' || item.type === 'cancellation' ? 'text-error' : 'text-success'">
+            {{ item.type === 'sale' ? '-' : '+' }}{{ item.quantity }}
+          </span>
+        </template>
+        <template #item.stock_change="{ item }">
+          {{ item.stock_before }} → {{ item.stock_after }}
+        </template>
+        <template #item.created_at="{ item }">{{ formatDateTime(item.created_at) }}</template>
+        <template #expanded-row="{ columns, item }">
+          <tr>
+            <td :colspan="columns.length" class="pa-4 bg-grey-lighten-5">
+              <v-row dense>
+                <v-col cols="12" sm="6">
+                  <span class="text-caption text-medium-emphasis">Usuario:</span>
+                  <span class="ml-2">{{ item.user?.name || '—' }}</span>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <span class="text-caption text-medium-emphasis">Razón:</span>
+                  <span class="ml-2">{{ item.reason || '—' }}</span>
+                </v-col>
+              </v-row>
+            </td>
+          </tr>
+        </template>
       </v-data-table>
     </v-card>
   </v-container>
@@ -77,7 +113,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { formatDate } from '@core/utils/format'
+import { formatDateTime } from '@core/utils/format'
 import { notifySuccess, notifyApiError } from '@core/utils/notify'
 import * as inventoryService from '../services/inventory.service'
 import { fetchProducts } from '../services/product.service'
@@ -86,12 +122,14 @@ import type { AdjustmentForm } from '../types/inventory.types'
 
 const movements = ref<InventoryMovement[]>([])
 const products = ref<Product[]>([])
+const searchQuery = ref('')
 const filterProduct = ref<number | string>('')
 const filterType = ref('')
 const showAdjustForm = ref(false)
 const adjustForm = ref<AdjustmentForm>({ product_id: '', new_stock: 0, reason: '' })
 
 const typeOptions = [
+  { title: 'Todos', value: '' },
   { title: 'Compra', value: 'purchase' },
   { title: 'Venta', value: 'sale' },
   { title: 'Ajuste', value: 'adjustment' },
@@ -104,12 +142,9 @@ const productOptions = computed(() =>
 
 const headers = [
   { title: 'Producto', key: 'product' },
-  { title: 'Usuario', key: 'user' },
   { title: 'Tipo', key: 'type' },
-  { title: 'Cantidad', key: 'quantity' },
-  { title: 'Stock Antes', key: 'stock_before' },
-  { title: 'Stock Después', key: 'stock_after' },
-  { title: 'Razón', key: 'reason' },
+  { title: 'Cantidad', key: 'quantity', width: 100 },
+  { title: 'Stock', key: 'stock_change' },
   { title: 'Fecha', key: 'created_at' },
 ]
 
@@ -117,12 +152,23 @@ const typeLabel = (t: InventoryMovementType) =>
   ({ purchase: 'Compra', sale: 'Venta', adjustment: 'Ajuste', cancellation: 'Cancelación' })[t] || t
 
 const typeColor = (t: InventoryMovementType) =>
-  ({ purchase: 'info', sale: 'success', adjustment: 'warning', cancellation: 'error' })[t] || 'grey'
+  ({ purchase: 'blue', sale: 'green', adjustment: 'orange', cancellation: 'red' })[t] || 'grey'
+
+const typeIcon = (t: InventoryMovementType) =>
+  ({ purchase: 'mdi-cart-arrow-down', sale: 'mdi-cart-arrow-up', adjustment: 'mdi-tune', cancellation: 'mdi-cancel' })[t] || 'mdi-help'
 
 const filteredMovements = computed(() => {
   let list = movements.value
+  const q = searchQuery.value.toLowerCase()
+  if (q) {
+    list = list.filter((m) =>
+      (m.product?.name?.toLowerCase().includes(q)) ||
+      (m.reason?.toLowerCase().includes(q)) ||
+      (m.user?.name?.toLowerCase().includes(q))
+    )
+  }
   if (filterProduct.value) list = list.filter((m) => String(m.product_id) === String(filterProduct.value))
-  if (filterType.value) list = list.filter((m) => m.type === filterType.value)
+  if (filterType.value) list = list.filter((m) => m.type?.toLowerCase() === filterType.value.toLowerCase())
   return list
 })
 

@@ -1,6 +1,6 @@
 <template>
   <div class="pos-container d-flex flex-column" style="height: calc(100vh - 64px); overflow: hidden">
-    <!-- Order tabs bar + cash register indicator -->
+    <!-- Order bar + cash register indicator -->
     <PosOrderTabs>
       <template #append>
         <v-chip
@@ -25,7 +25,7 @@
       class="flex-shrink-0"
     >
       <template #text>
-        No hay caja abierta. Debes abrir una caja para poder cobrar órdenes.
+        No hay caja abierta. Debes abrir una caja para poder operar el POS.
       </template>
       <template #actions>
         <v-btn color="warning" variant="tonal" to="/cash-register">Abrir Caja</v-btn>
@@ -37,7 +37,21 @@
       <v-progress-circular indeterminate color="primary" size="48" />
     </div>
 
-    <!-- State A: First-time guide (never used POS + no orders) -->
+    <!-- State A: No cash register → block everything -->
+    <div v-else-if="!posStore.cashRegisterOpen" class="d-flex align-center justify-center flex-grow-1">
+      <v-card max-width="450" flat class="text-center pa-8">
+        <v-icon size="80" color="warning" class="mb-4">mdi-cash-register</v-icon>
+        <div class="text-h5 mb-4">Caja No Abierta</div>
+        <div class="text-body-1 text-medium-emphasis mb-6">
+          Debes abrir una caja registradora antes de poder crear órdenes, agregar productos o cerrar ventas.
+        </div>
+        <v-btn color="warning" size="large" prepend-icon="mdi-lock-open" to="/cash-register">
+          Ir a Abrir Caja
+        </v-btn>
+      </v-card>
+    </div>
+
+    <!-- State B: First-time guide (never used POS + no orders) -->
     <div v-else-if="showFirstTimeGuide" class="d-flex align-center justify-center flex-grow-1">
       <v-card max-width="500" flat class="text-center pa-8">
         <v-icon size="80" color="primary" class="mb-4">mdi-point-of-sale</v-icon>
@@ -62,7 +76,7 @@
       </v-card>
     </div>
 
-    <!-- State B: Post-sale summary (just closed a sale, no active order) -->
+    <!-- State C: Post-sale summary (just closed a sale) -->
     <div v-else-if="showPostSaleSummary" class="d-flex align-center justify-center flex-grow-1">
       <v-card max-width="450" class="text-center pa-8" flat>
         <v-icon size="64" color="success" class="mb-3">mdi-check-circle</v-icon>
@@ -100,7 +114,7 @@
       </v-card>
     </div>
 
-    <!-- State C: Ready for new order (has used POS, no active order, no last sale) -->
+    <!-- State D: Ready for new order (no active order, no last sale) -->
     <div v-else-if="!posStore.activeOrder" class="d-flex align-center justify-center flex-grow-1">
       <v-card max-width="400" flat class="text-center pa-8">
         <v-icon size="64" color="primary" class="mb-3">mdi-cart-plus</v-icon>
@@ -114,17 +128,17 @@
       </v-card>
     </div>
 
-    <!-- State D: Active order — main POS content -->
+    <!-- State E: Active order — main POS content -->
     <div v-else class="d-flex flex-grow-1" style="min-height: 0">
       <!-- Left: Products -->
       <div class="flex-grow-1 d-flex flex-column pa-3" style="overflow-y: auto">
         <PosCategoryTabs v-model="selectedCategory" :categories="inventoryStore.categories" />
-        <div v-if="filteredProducts.length" class="d-flex flex-wrap ga-3 mt-3">
+        <div v-if="filteredProducts.length" class="d-flex flex-wrap ga-4 mt-3">
           <PosProductCard
             v-for="product in filteredProducts"
             :key="product.id"
             :product="product"
-            style="width: 150px"
+            style="width: 200px"
             @add="onAddProduct"
           />
         </div>
@@ -145,10 +159,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { usePosStore } from '../store/pos.store'
 import { useInventoryStore } from '@modules/inventory/store/inventory.store'
 import { useCashRegisterStore } from '@modules/cash-register/store/cash-register.store'
+import { useAuthStore } from '@modules/auth/store/auth.store'
+import { useAuthGate } from '@core/composables/useAuthGate'
 import { notifyApiError, notifyError } from '@core/utils/notify'
 import { formatCOP } from '@core/utils/format'
 import type { Product, PaymentMethod } from '@core/types/models'
@@ -161,6 +177,8 @@ import PosPaymentDialog from '../components/PosPaymentDialog.vue'
 const posStore = usePosStore()
 const inventoryStore = useInventoryStore()
 const crStore = useCashRegisterStore()
+const authStore = useAuthStore()
+const { requirePassword } = useAuthGate()
 
 const selectedCategory = ref<number | string>('')
 const showPayment = ref(false)
@@ -168,11 +186,11 @@ const initialLoading = ref(true)
 const creatingOrder = ref(false)
 
 const showFirstTimeGuide = computed(() =>
-  !posStore.hasUsedPos && !posStore.activeOrder && posStore.openOrders.length === 0
+  posStore.cashRegisterOpen && !posStore.hasUsedPos && !posStore.activeOrder && posStore.openOrders.length === 0
 )
 
 const showPostSaleSummary = computed(() =>
-  !posStore.activeOrder && posStore.lastClosedSale !== null
+  posStore.cashRegisterOpen && !posStore.activeOrder && posStore.lastClosedSale !== null
 )
 
 const filteredProducts = computed(() => {
@@ -203,6 +221,17 @@ function onOpenPayment() {
 }
 
 async function onCreateOrder() {
+  if (!posStore.cashRegisterOpen) {
+    notifyError('Sin Caja', 'Debes abrir una caja antes de crear órdenes.')
+    return
+  }
+
+  const role = (authStore.user?.role ?? '').toLowerCase()
+  if (role && role !== 'admin') {
+    const verified = await requirePassword('Crear Orden', 'Ingresa tu contraseña para crear una orden')
+    if (!verified) return
+  }
+
   creatingOrder.value = true
   try {
     await posStore.createOrder()
@@ -214,6 +243,10 @@ async function onCreateOrder() {
 }
 
 async function onAddProduct(product: Product) {
+  if (!posStore.cashRegisterOpen) {
+    notifyError('Sin Caja', 'Debes abrir una caja antes de agregar productos.')
+    return
+  }
   try {
     await posStore.addProduct(product)
   } catch (err) {
@@ -236,5 +269,9 @@ onMounted(async () => {
   } finally {
     initialLoading.value = false
   }
+})
+
+onBeforeUnmount(() => {
+  posStore.clearLastSale()
 })
 </script>

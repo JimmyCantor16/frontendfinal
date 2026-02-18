@@ -12,8 +12,12 @@ export function authGuard(
     return next('/login')
   }
 
-  if (to.meta.role && auth.user?.role !== to.meta.role) {
-    return next('/dashboard')
+  if (to.meta.role) {
+    const allowed = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role]
+    const role = (auth.user?.role ?? '').toLowerCase()
+    if (role && !allowed.includes(role)) {
+      return next('/dashboard')
+    }
   }
 
   if (to.path === '/login' && auth.token) {

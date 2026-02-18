@@ -34,7 +34,7 @@
           <v-text-field v-model="form.name" label="Nombre" :rules="[r => !!r || 'Requerido']" class="mb-2" />
           <v-text-field v-model="form.phone" label="Teléfono" class="mb-2" />
           <v-text-field v-model="form.email" label="Email" type="email" class="mb-2" />
-          <v-text-field v-model="form.address" label="Dirección" class="mb-2" />
+          <v-text-field v-model="form.address" label="Dirección (opcional)" hint="Solo si el cliente lo proporciona" persistent-hint class="mb-2" />
           <v-card-actions class="px-0">
             <v-spacer />
             <v-btn variant="text" @click="showForm = false">Cancelar</v-btn>

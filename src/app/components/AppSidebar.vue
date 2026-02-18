@@ -13,8 +13,9 @@
         active-color="primary"
       />
 
-      <!-- POS -->
+      <!-- POS (admin/cajero) -->
       <v-list-item
+        v-if="canOperate"
         prepend-icon="mdi-point-of-sale"
         title="Punto de Venta"
         to="/pos"
@@ -23,40 +24,46 @@
 
       <v-divider class="my-2" />
 
-      <!-- Catalogos -->
-      <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
-        Catálogos
-      </v-list-subheader>
-      <v-list-item prepend-icon="mdi-shape" title="Categorías" to="/categories" active-color="primary" />
-      <v-list-item prepend-icon="mdi-truck" title="Proveedores" to="/suppliers" active-color="primary" />
-      <v-list-item prepend-icon="mdi-account-group" title="Clientes" to="/clients" active-color="primary" />
+      <!-- Catalogos (admin only) -->
+      <template v-if="isAdmin">
+        <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
+          Catálogos
+        </v-list-subheader>
+        <v-list-item prepend-icon="mdi-shape" title="Categorías" to="/categories" active-color="primary" />
+        <v-list-item prepend-icon="mdi-truck" title="Proveedores" to="/suppliers" active-color="primary" />
+        <v-list-item prepend-icon="mdi-account-group" title="Clientes" to="/clients" active-color="primary" />
 
-      <v-divider class="my-2" />
+        <v-divider class="my-2" />
+      </template>
 
       <!-- Inventario -->
       <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
         Inventario
       </v-list-subheader>
       <v-list-item prepend-icon="mdi-package-variant-closed" title="Productos" to="/products" active-color="primary" />
-      <v-list-item prepend-icon="mdi-swap-horizontal" title="Movimientos" to="/inventory" active-color="primary" />
+      <v-list-item v-if="isAdmin" prepend-icon="mdi-swap-horizontal" title="Movimientos" to="/inventory" active-color="primary" />
 
       <v-divider class="my-2" />
 
-      <!-- Operaciones -->
-      <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
-        Operaciones
-      </v-list-subheader>
-      <v-list-item prepend-icon="mdi-cash-register" title="Caja Registradora" to="/cash-register" active-color="primary" />
-      <v-list-item prepend-icon="mdi-cart" title="Órdenes de Compra" to="/purchase-orders" active-color="primary" />
-      <v-list-item prepend-icon="mdi-file-document" title="Facturas" to="/invoices" active-color="primary" />
+      <!-- Operaciones (admin/cajero) -->
+      <template v-if="canOperate">
+        <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
+          Operaciones
+        </v-list-subheader>
+        <v-list-item prepend-icon="mdi-cash-register" title="Caja Registradora" to="/cash-register" active-color="primary" />
+        <v-list-item v-if="isAdmin" prepend-icon="mdi-cart" title="Órdenes de Compra" to="/purchase-orders" active-color="primary" />
+        <v-list-item prepend-icon="mdi-file-document" title="Facturas" to="/invoices" active-color="primary" />
 
-      <v-divider class="my-2" />
+        <v-divider class="my-2" />
+      </template>
 
-      <!-- Reportes -->
-      <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
-        Reportes
-      </v-list-subheader>
-      <v-list-item prepend-icon="mdi-chart-bar" title="Reporte Diario" to="/reports/daily" active-color="primary" />
+      <!-- Reportes (admin only) -->
+      <template v-if="isAdmin">
+        <v-list-subheader class="text-uppercase" style="color: rgb(var(--v-theme-accent))">
+          Reportes
+        </v-list-subheader>
+        <v-list-item prepend-icon="mdi-chart-bar" title="Reporte Diario" to="/reports/daily" active-color="primary" />
+      </template>
 
       <!-- Admin -->
       <template v-if="isAdmin">
@@ -80,7 +87,9 @@ import { computed } from 'vue'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 
 const authStore = useAuthStore()
-const isAdmin = computed(() => authStore.user?.role === 'admin')
+const userRole = computed(() => (authStore.user?.role ?? '').toLowerCase())
+const isAdmin = computed(() => !userRole.value || userRole.value === 'admin')
+const canOperate = computed(() => !userRole.value || userRole.value === 'admin' || userRole.value === 'cajero')
 
 defineProps<{
   modelValue: boolean

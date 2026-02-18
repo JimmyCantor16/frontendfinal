@@ -18,6 +18,7 @@ export const usePosStore = defineStore('pos', () => {
   const openOrders = ref<Order[]>([])
   const activeOrderId = ref<number | null>(null)
   const loading = ref(false)
+  const creatingOrder = ref(false)
   const lastClosedSale = ref<ClosedSaleSummary | null>(null)
   const hasUsedPos = ref(false)
 
@@ -28,7 +29,17 @@ export const usePosStore = defineStore('pos', () => {
   const cartItems = computed<OrderItem[]>(() => activeOrder.value?.items ?? [])
 
   const cartTotal = computed<number>(() =>
-    cartItems.value.reduce((sum, item) => sum + Number(item.subtotal || 0), 0)
+    cartItems.value.reduce((sum, item) => {
+      const raw: unknown = item.subtotal
+      if (typeof raw === 'string') {
+        let cleaned = raw.replace(/[^\d.,-]/g, '')
+        if (cleaned.includes(',') && !cleaned.includes('.')) {
+          cleaned = cleaned.replace(',', '.')
+        }
+        return sum + (Number(cleaned) || 0)
+      }
+      return sum + (Number(raw) || 0)
+    }, 0)
   )
 
   const orderTabs = computed(() =>
@@ -60,11 +71,17 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   async function createOrder(): Promise<void> {
-    const order = await posService.createOrder()
-    await loadOpenOrders()
-    activeOrderId.value = order.id
-    hasUsedPos.value = true
-    lastClosedSale.value = null
+    if (creatingOrder.value) return
+    creatingOrder.value = true
+    try {
+      const order = await posService.createOrder()
+      await loadOpenOrders()
+      activeOrderId.value = order.id
+      hasUsedPos.value = true
+      lastClosedSale.value = null
+    } finally {
+      creatingOrder.value = false
+    }
   }
 
   function selectOrder(orderId: number): void {
@@ -116,15 +133,20 @@ export const usePosStore = defineStore('pos', () => {
     await loadOpenOrders()
     const inventoryStore = useInventoryStore()
     await inventoryStore.loadProducts()
+    const crStore = useCashRegisterStore()
+    await crStore.loadCurrent()
   }
 
-  async function cancelOrder(): Promise<void> {
+  async function cancelOrder(reason?: string): Promise<void> {
     if (!activeOrderId.value) return
-    await posService.cancelOrder(activeOrderId.value)
+    await posService.cancelOrder(activeOrderId.value, reason)
+    lastClosedSale.value = null
     activeOrderId.value = null
     await loadOpenOrders()
     const inventoryStore = useInventoryStore()
     await inventoryStore.loadProducts()
+    const crStore = useCashRegisterStore()
+    await crStore.loadCurrent()
     notifySuccess('Orden cancelada')
   }
 
@@ -132,10 +154,20 @@ export const usePosStore = defineStore('pos', () => {
     lastClosedSale.value = null
   }
 
+  function $fullReset(): void {
+    openOrders.value = []
+    activeOrderId.value = null
+    loading.value = false
+    creatingOrder.value = false
+    lastClosedSale.value = null
+    hasUsedPos.value = false
+  }
+
   return {
     openOrders,
     activeOrderId,
     loading,
+    creatingOrder,
     lastClosedSale,
     hasUsedPos,
     activeOrder,
@@ -151,5 +183,6 @@ export const usePosStore = defineStore('pos', () => {
     closeOrder,
     cancelOrder,
     clearLastSale,
+    $fullReset,
   }
 })

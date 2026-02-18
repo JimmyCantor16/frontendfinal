@@ -40,7 +40,7 @@
         block
         size="large"
         class="mb-2"
-        :disabled="!posStore.cartItems.length"
+        :disabled="!posStore.cartItems.length || !posStore.cashRegisterOpen"
         prepend-icon="mdi-point-of-sale"
         @click="$emit('open-payment')"
       >
@@ -50,7 +50,7 @@
         color="error"
         variant="outlined"
         block
-        :disabled="!posStore.activeOrder"
+        :disabled="!posStore.activeOrder || !posStore.cashRegisterOpen"
         @click="onCancel"
       >
         Cancelar Orden
@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { usePosStore } from '../store/pos.store'
 import { formatCOP } from '@core/utils/format'
-import { notifyApiError, confirmAction } from '@core/utils/notify'
+import { notifyApiError, promptInput, confirmAction } from '@core/utils/notify'
 import PosCartItem from './PosCartItem.vue'
 
 const posStore = usePosStore()
@@ -86,17 +86,16 @@ async function onRemoveItem(itemId: number) {
 }
 
 async function onCancel() {
-  const confirmed = await confirmAction(
+  const reason = await promptInput(
     '¿Cancelar esta orden?',
-    'Se devolverá todo el stock',
-    'Sí, cancelar'
+    'Escribe el motivo de la cancelación. Se devolverá todo el stock.',
+    'Motivo de cancelación...'
   )
-  if (confirmed) {
-    try {
-      await posStore.cancelOrder()
-    } catch (err) {
-      notifyApiError(err, 'Error al cancelar orden')
-    }
+  if (!reason) return
+  try {
+    await posStore.cancelOrder(reason)
+  } catch (err) {
+    notifyApiError(err, 'Error al cancelar orden')
   }
 }
 </script>

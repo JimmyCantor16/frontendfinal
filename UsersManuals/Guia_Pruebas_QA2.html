@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Pruebas QA Fase 2 — Sistema POS Bar</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1a1a1a; line-height: 1.6; padding: 40px 50px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; color: #1565C0; border-bottom: 3px solid #1565C0; padding-bottom: 8px; margin-bottom: 20px; }
+  h2 { font-size: 22px; color: #1565C0; margin-top: 30px; margin-bottom: 12px; border-left: 4px solid #1565C0; padding-left: 12px; }
+  h3 { font-size: 17px; color: #333; margin-top: 18px; margin-bottom: 8px; }
+  p, li { font-size: 14px; margin-bottom: 6px; }
+  ul, ol { padding-left: 24px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+  th { background: #E3F2FD; font-weight: 600; }
+  .role-admin { color: #1565C0; font-weight: bold; }
+  .role-cajero { color: #2E7D32; font-weight: bold; }
+  .role-user { color: #757575; font-weight: bold; }
+  .section { margin-bottom: 25px; }
+  .test-case { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; margin-bottom: 14px; }
+  .test-case h4 { font-size: 14px; color: #1565C0; margin-bottom: 6px; }
+  .test-case .steps { padding-left: 18px; }
+  .test-case .expected { color: #2E7D32; font-weight: 500; margin-top: 6px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; color: white; }
+  .badge-admin { background: #1565C0; }
+  .badge-cajero { background: #2E7D32; }
+  .badge-user { background: #757575; }
+  .badge-critical { background: #D32F2F; }
+  .badge-important { background: #F57C00; }
+  .badge-normal { background: #1976D2; }
+  .note { background: #FFF3E0; border-left: 4px solid #F57C00; padding: 10px 14px; margin: 12px 0; font-size: 13px; border-radius: 0 4px 4px 0; }
+  .backend-note { background: #FFEBEE; border-left: 4px solid #D32F2F; padding: 10px 14px; margin: 12px 0; font-size: 13px; border-radius: 0 4px 4px 0; }
+  .page-break { page-break-before: always; }
+  @media print { body { padding: 20px 30px; } .page-break { page-break-before: always; } }
+</style>
+</head>
+<body>
+
+<h1>Guía de Pruebas QA — Fase 2</h1>
+<p><strong>Sistema:</strong> POS Bar/Restaurante &nbsp;|&nbsp; <strong>Fecha:</strong> 15 de Febrero de 2026 &nbsp;|&nbsp; <strong>Versión:</strong> 2.0-QA2</p>
+
+<div class="note">
+  <strong>Instrucciones:</strong> Ejecutar cada caso de prueba en orden. Para cada test, verificar el resultado esperado. Marcar ✅ si pasa, ❌ si falla, con observaciones.
+</div>
+
+<!-- ==================== PERFILES ==================== -->
+<h2>1. Perfiles de Usuario</h2>
+
+<table>
+  <tr>
+    <th>Rol</th>
+    <th>Descripción</th>
+    <th>Acceso Principal</th>
+  </tr>
+  <tr>
+    <td><span class="badge badge-admin">ADMIN</span></td>
+    <td>Dueño/gerente. Acceso total al sistema.</td>
+    <td>Todo: usuarios, caja, POS, inventario, compras, facturas, reportes, configuración</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-cajero">CAJERO</span></td>
+    <td>Operador de caja y POS.</td>
+    <td>Caja (abrir/cerrar con contraseña), POS (crear orden con contraseña), facturas, ver productos</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-user">USER</span></td>
+    <td>Empleado básico (mesero).</td>
+    <td>Solo ver dashboard y productos. No puede operar caja ni POS.</td>
+  </tr>
+</table>
+
+<!-- ==================== GESTIÓN USUARIOS ==================== -->
+<h2>2. Gestión de Usuarios <span class="badge badge-admin">ADMIN</span></h2>
+
+<div class="test-case">
+  <h4>TEST 2.1 — Crear usuario con indicador de contraseña <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Usuarios</strong> en el menú lateral</li>
+    <li>Clic en <strong>"Nuevo Usuario"</strong></li>
+    <li>Llenar: Nombre, Email, seleccionar Rol</li>
+    <li>En el campo Contraseña, escribir "123" → observar indicador</li>
+    <li>Cambiar a "Abc12345" → observar cambio en indicador</li>
+    <li>Cambiar a "Abc12345!" → observar indicador verde</li>
+    <li>Guardar</li>
+  </ol>
+  <p class="expected">✓ Indicador de fuerza cambia de rojo → naranja → verde. Muestra qué criterios faltan (mayúscula, número, especial, etc.). Contraseña menor a 8 chars muestra error de validación.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 2.2 — Editar usuario (contraseña opcional) <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>En la lista de usuarios, clic en editar (ícono lápiz)</li>
+    <li>Cambiar el nombre</li>
+    <li>Dejar contraseña vacía</li>
+    <li>Guardar</li>
+  </ol>
+  <p class="expected">✓ Usuario actualizado sin cambiar contraseña. Hint "Dejar vacío para no cambiar" visible.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 2.3 — Eliminar usuario <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Clic en eliminar (ícono papelera) de un usuario</li>
+    <li>Aparece confirmación con el nombre del usuario</li>
+    <li>Confirmar</li>
+  </ol>
+  <p class="expected">✓ Usuario eliminado de la lista.</p>
+</div>
+
+<div class="backend-note">
+  <strong>Nota Backend:</strong> Si POST /api/users retorna error 405, el endpoint de creación de usuarios no existe en el backend. Se requiere implementar la ruta.
+</div>
+
+<!-- ==================== SIDEBAR ==================== -->
+<h2>3. Sidebar y Navegación por Rol</h2>
+
+<div class="test-case">
+  <h4>TEST 3.1 — Sidebar Admin: todos los menús visibles <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Iniciar sesión como <span class="role-admin">admin</span></li>
+    <li>Verificar menú lateral</li>
+  </ol>
+  <p class="expected">✓ Visible: Dashboard, POS, Catálogos (Categorías, Proveedores, Clientes), Inventario (Productos, Movimientos), Operaciones (Caja, Facturas, Compras), Reportes, Admin (Usuarios), Configuración.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 3.2 — Sidebar Cajero: menú limitado <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Iniciar sesión como <span class="role-cajero">cajero</span></li>
+    <li>Verificar menú lateral</li>
+  </ol>
+  <p class="expected">✓ Visible: Dashboard, POS, Productos (solo ver), Caja, Facturas. NO visible: Categorías, Proveedores, Clientes, Movimientos, Compras, Reportes, Usuarios.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 3.3 — Sidebar User: menú mínimo <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Iniciar sesión como <span class="role-user">user</span></li>
+    <li>Verificar menú lateral</li>
+  </ol>
+  <p class="expected">✓ Visible: Dashboard, Productos (solo ver), Configuración. NO visible: POS, Caja, Facturas, Compras, etc.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 3.4 — Acceso directo por URL bloqueado <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Como <span class="role-user">user</span>, navegar directamente a <code>/pos</code></li>
+    <li>Intentar <code>/cash-register</code></li>
+    <li>Intentar <code>/users</code></li>
+  </ol>
+  <p class="expected">✓ Redirige a /dashboard en todos los casos.</p>
+</div>
+
+<!-- ==================== CAJA ==================== -->
+<div class="page-break"></div>
+<h2>4. Caja Registradora <span class="badge badge-admin">ADMIN</span> <span class="badge badge-cajero">CAJERO</span></h2>
+
+<div class="test-case">
+  <h4>TEST 4.1 — Abrir caja con verificación de contraseña <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Caja Registradora</strong></li>
+    <li>Ingresar monto inicial (ej: $100,000)</li>
+    <li>Clic en "Abrir Caja"</li>
+    <li>Se solicita contraseña → ingresar contraseña correcta</li>
+  </ol>
+  <p class="expected">✓ Caja se abre. Muestra status "Abierta" con monto inicial y desglose de ventas.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 4.2 — Abrir caja: contraseña incorrecta (3 intentos) <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Intentar abrir caja con contraseña incorrecta 3 veces</li>
+  </ol>
+  <p class="expected">✓ Tras 3 intentos fallidos: "Sesión bloqueada" y se cierra sesión automáticamente. Redirige a login.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 4.3 — Cerrar caja SIN diferencia <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Con caja abierta, ir al panel "Cerrar Caja"</li>
+    <li>Ingresar monto exacto igual al esperado (Apertura + Efectivo)</li>
+    <li>Agregar notas opcionales</li>
+    <li>Clic "Cerrar Caja" → se pide contraseña → confirmar</li>
+  </ol>
+  <p class="expected">✓ No se pide motivo de diferencia. Caja se cierra correctamente.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 4.4 — Cerrar caja CON diferencia (faltante) <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ingresar monto menor al esperado (ej: esperado $200,000, contado $180,000)</li>
+    <li>Observar alerta "Faltante detectado" en rojo</li>
+    <li>Intentar cerrar sin escribir motivo</li>
+    <li>Escribir motivo: "Error de cambio en mesa 3"</li>
+    <li>Clic "Cerrar Caja" → contraseña → confirmar</li>
+  </ol>
+  <p class="expected">✓ No permite cerrar sin motivo. Al escribir motivo y confirmar, caja cierra con nota "Motivo diferencia: ...".</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 4.5 — Cerrar caja CON diferencia (sobrante) <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Ingresar monto mayor al esperado</li>
+    <li>Observar alerta "Sobrante detectado" en naranja</li>
+    <li>Escribir motivo</li>
+    <li>Cerrar</li>
+  </ol>
+  <p class="expected">✓ Misma lógica: requiere motivo si hay diferencia.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 4.6 — User intenta abrir caja <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Como <span class="role-user">user</span>, navegar a /cash-register</li>
+  </ol>
+  <p class="expected">✓ Redirige a dashboard (guard de ruta bloquea acceso).</p>
+</div>
+
+<!-- ==================== POS ==================== -->
+<div class="page-break"></div>
+<h2>5. Punto de Venta (POS) <span class="badge badge-admin">ADMIN</span> <span class="badge badge-cajero">CAJERO</span></h2>
+
+<div class="test-case">
+  <h4>TEST 5.1 — Crear primera orden (guía de bienvenida) <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Con caja abierta, ir a POS</li>
+    <li>Verificar que aparece guía de bienvenida con pasos (1-2-3)</li>
+    <li>Clic "Crear Primera Orden"</li>
+    <li>Si no es admin: se pide contraseña</li>
+  </ol>
+  <p class="expected">✓ Guía visible la primera vez. Orden se crea tras verificar contraseña (cajero) o directamente (admin).</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.2 — Bloqueo de nueva orden si hay orden activa <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Con una orden activa abierta</li>
+    <li>Observar botón "Nueva Orden" en la barra de tabs</li>
+  </ol>
+  <p class="expected">✓ Botón "Nueva Orden" está deshabilitado (gris) mientras hay una orden activa seleccionada.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.3 — Agregar productos al carrito <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Clic en tarjetas de productos de la izquierda</li>
+    <li>Verificar que aparecen en el carrito derecho</li>
+    <li>Verificar total se actualiza</li>
+  </ol>
+  <p class="expected">✓ Productos se agregan. Total se recalcula correctamente.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.4 — Quitar producto del carrito <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Clic en ícono de eliminar en un item del carrito</li>
+    <li>Confirmar</li>
+  </ol>
+  <p class="expected">✓ Producto se quita, stock se devuelve, total se actualiza.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.5 — Cerrar venta (cobrar) <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Con productos en carrito, clic "Cerrar Venta"</li>
+    <li>Seleccionar método de pago (Efectivo/Tarjeta/Transferencia/QR)</li>
+    <li>Confirmar</li>
+  </ol>
+  <p class="expected">✓ Venta cerrada. Resumen muestra: orden, total, método, productos, hora. Stock se actualiza.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.6 — Cancelar orden con motivo obligatorio <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Con una orden activa, clic "Cancelar Orden"</li>
+    <li>Aparece campo de texto "Motivo de cancelación"</li>
+    <li>Intentar confirmar sin escribir motivo</li>
+    <li>Escribir motivo: "Cliente se fue sin ordenar"</li>
+    <li>Confirmar</li>
+  </ol>
+  <p class="expected">✓ No permite cancelar sin motivo. Al escribir motivo, orden se cancela y stock se devuelve.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.7 — POS sin caja abierta <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Cerrar caja primero</li>
+    <li>Ir a POS</li>
+    <li>Intentar cobrar una orden</li>
+  </ol>
+  <p class="expected">✓ Banner "No hay caja abierta" visible. Botón "Cerrar Venta" muestra error "Debes abrir una caja".</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 5.8 — Limpieza de estado al navegar <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Cerrar una venta (ver resumen)</li>
+    <li>Navegar a Dashboard</li>
+    <li>Volver a POS</li>
+  </ol>
+  <p class="expected">✓ No aparece resumen viejo. Estado limpio, listo para nueva orden.</p>
+</div>
+
+<!-- ==================== FACTURAS ==================== -->
+<div class="page-break"></div>
+<h2>6. Facturas <span class="badge badge-admin">ADMIN</span> <span class="badge badge-cajero">CAJERO</span></h2>
+
+<div class="test-case">
+  <h4>TEST 6.1 — Crear factura con método de pago <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Facturas</strong> → "Nueva Factura"</li>
+    <li>Seleccionar cliente</li>
+    <li>Agregar productos (verificar que solo aparecen activos con stock > 0)</li>
+    <li>Seleccionar método de pago (Efectivo/Tarjeta/Transferencia/QR)</li>
+    <li>Crear</li>
+  </ol>
+  <p class="expected">✓ Factura creada con método de pago. Productos sin stock no aparecen en selector.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 6.2 — Validación de stock en factura (español) <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>En nueva factura, seleccionar producto con stock limitado (ej: stock=2)</li>
+    <li>Poner cantidad mayor al stock (ej: cantidad=5)</li>
+    <li>Intentar crear</li>
+  </ol>
+  <p class="expected">✓ Mensaje en español: "X solo tiene Y unidades disponibles." No crea la factura.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 6.3 — Crear cliente desde formulario de factura <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>En nueva factura, clic en ícono (+) al lado del selector de cliente</li>
+    <li>Llenar datos: tipo doc, número, nombre</li>
+    <li>Campo "Dirección (opcional)" con hint</li>
+    <li>Crear</li>
+  </ol>
+  <p class="expected">✓ Cliente creado y auto-seleccionado en el formulario. Dirección muestra hint "Solo si el cliente lo proporciona".</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 6.4 — Detalle de factura (solo admin) <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Como <span class="role-cajero">cajero</span>, intentar acceder a /invoices/1</li>
+    <li>Como <span class="role-admin">admin</span>, acceder a /invoices/1</li>
+  </ol>
+  <p class="expected">✓ Cajero es redirigido a dashboard. Admin puede ver el detalle completo.</p>
+</div>
+
+<!-- ==================== COMPRAS ==================== -->
+<h2>7. Órdenes de Compra <span class="badge badge-admin">ADMIN</span></h2>
+
+<div class="test-case">
+  <h4>TEST 7.1 — Ver detalle con IVA (19%) <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Compras</strong> → abrir una orden de compra</li>
+    <li>Verificar tabla de items: columna IVA (19%)</li>
+    <li>Verificar totales: Subtotal, IVA, Total</li>
+  </ol>
+  <p class="expected">✓ Cada item muestra IVA = precio × cantidad × 0.19. Totales correctos al final.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 7.2 — Cancelar orden con motivo <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>En detalle de orden pendiente, clic "Cancelar Orden"</li>
+    <li>Aparece campo de motivo (requerido)</li>
+    <li>Intentar sin motivo → error</li>
+    <li>Escribir motivo → confirmar</li>
+  </ol>
+  <p class="expected">✓ No permite cancelar sin motivo. Tras cancelar, alerta de auditoría muestra quién canceló, cuándo y por qué.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 7.3 — Recibir orden con checklist <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>En orden aprobada, clic "Recibir Orden"</li>
+    <li>Por cada item: marcar checkbox, ajustar cantidad recibida</li>
+    <li>Si hay devolución: llenar cantidad devuelta + motivo</li>
+    <li>Confirmar recepción</li>
+  </ol>
+  <p class="expected">✓ Checklist interactivo por item. Motivo requerido si hay devolución. Tras confirmar, alerta muestra quién recibió y cuándo.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 7.4 — Auditoría visible en órdenes procesadas <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Abrir una orden ya recibida o cancelada</li>
+  </ol>
+  <p class="expected">✓ Alerta informativa muestra: acción (recibida/cancelada), usuario, fecha/hora, motivo (si aplica).</p>
+</div>
+
+<!-- ==================== INVENTARIO ==================== -->
+<div class="page-break"></div>
+<h2>8. Inventario y Productos <span class="badge badge-admin">ADMIN</span></h2>
+
+<div class="test-case">
+  <h4>TEST 8.1 — Stock mínimo obligatorio <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Productos</strong> → "Nuevo Producto"</li>
+    <li>Intentar guardar con stock mínimo = 0</li>
+  </ol>
+  <p class="expected">✓ Validación: "Stock mínimo requerido (mín. 1)". No permite guardar con stock mínimo menor a 1.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 8.2 — Filtro stock bajo incluye stock=0 <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Marcar checkbox "Stock bajo"</li>
+    <li>Verificar que aparecen productos con stock=0 y con stock ≤ mínimo</li>
+  </ol>
+  <p class="expected">✓ Productos con stock 0 aparecen (chip rojo). Productos con stock ≤ mínimo también aparecen.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 8.3 — Movimientos muestran hora + filas expandibles <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Movimientos de Inventario</strong></li>
+    <li>Verificar columna "Fecha" muestra fecha Y hora (ej: 15/2/2026 14:30)</li>
+    <li>Clic en fila expandible (flecha) de un movimiento</li>
+  </ol>
+  <p class="expected">✓ Fecha incluye hora. Fila expandida muestra: Usuario y Razón del movimiento.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 8.4 — Ajuste manual de inventario <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Clic "Ajuste Manual" → seleccionar producto, nuevo stock, razón</li>
+    <li>Confirmar</li>
+  </ol>
+  <p class="expected">✓ Movimiento tipo "Ajuste" creado. Stock actualizado.</p>
+</div>
+
+<!-- ==================== CATÁLOGOS ==================== -->
+<h2>9. Catálogos <span class="badge badge-admin">ADMIN</span></h2>
+
+<div class="test-case">
+  <h4>TEST 9.1 — Proveedores: sugerencia de stock bajo <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Proveedores</strong></li>
+    <li>Verificar panel de alerta amarillo "Productos con stock bajo"</li>
+  </ol>
+  <p class="expected">✓ Panel muestra tabla con: SKU, Producto, Stock Actual (chip rojo si 0, amarillo si bajo), Stock Mín., Costo Compra. Solo aparece si hay productos con stock bajo.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 9.2 — Validación email en proveedor <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Crear/editar proveedor</li>
+    <li>Escribir email inválido (ej: "abc")</li>
+    <li>Intentar guardar</li>
+    <li>Dejar email vacío → debe permitir</li>
+  </ol>
+  <p class="expected">✓ Email inválido muestra "Email no válido". Email vacío es permitido (campo opcional).</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 9.3 — Dirección opcional en clientes <span class="badge badge-normal">Normal</span></h4>
+  <ol class="steps">
+    <li>Ir a <strong>Clientes</strong> → crear cliente</li>
+    <li>Verificar campo "Dirección (opcional)" con hint</li>
+  </ol>
+  <p class="expected">✓ Label dice "Dirección (opcional)". Hint: "Solo si el cliente lo proporciona".</p>
+</div>
+
+<!-- ==================== FLUJOS COMPLETOS ==================== -->
+<div class="page-break"></div>
+<h2>10. Flujo Completo: Día Suave (Lunes/Martes)</h2>
+<p><em>1 admin opera solo todo el día.</em></p>
+
+<div class="test-case">
+  <h4>FLUJO 10.1 — Día completo como Admin <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li><strong>Inicio:</strong> Login como admin → Dashboard</li>
+    <li><strong>Abrir Caja:</strong> Ir a Caja → Monto inicial $100,000 → Contraseña → Abrir</li>
+    <li><strong>Venta 1 (POS):</strong> Ir a POS → Crear orden → Agregar 2 productos → Cerrar venta (Efectivo)</li>
+    <li><strong>Venta 2 (POS):</strong> Nueva orden → Agregar 1 producto → Cerrar venta (Tarjeta)</li>
+    <li><strong>Factura:</strong> Ir a Facturas → Nueva factura → Cliente + productos → Método pago → Crear</li>
+    <li><strong>Inventario:</strong> Ver Productos (verificar stock actualizado) → Ver Movimientos (verificar registros de venta)</li>
+    <li><strong>Compras:</strong> (Si hay ordenes pendientes) Recibir con checklist</li>
+    <li><strong>Cierre:</strong> Ir a Caja → Contar efectivo → Ingresar monto → Contraseña → Cerrar</li>
+  </ol>
+  <p class="expected">✓ Todo el flujo funciona sin errores. Stock se descuenta con ventas. Movimientos registrados. Caja refleja ventas.</p>
+</div>
+
+<h2>11. Flujo Completo: Día Pesado (Jueves-Sábado)</h2>
+<p><em>Admin + 2-3 cajeros operando simultáneamente.</em></p>
+
+<div class="test-case">
+  <h4>FLUJO 11.1 — Multi-cajero <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li><strong>Admin:</strong> Login → Abrir caja para el turno</li>
+    <li><strong>Cajero 1:</strong> Login (otra pestaña/dispositivo) → Ir a POS → Contraseña → Crear orden → Vender</li>
+    <li><strong>Cajero 2:</strong> Login → Ir a POS → Contraseña → Crear orden → Vender</li>
+    <li><strong>Admin:</strong> Supervisa inventario, crea facturas si necesario</li>
+    <li><strong>Cancelación:</strong> Cajero 1 cancela orden → Escribe motivo → Confirmar</li>
+    <li><strong>Cierre:</strong> Admin cierra caja → Contraseña → Diferencia → Motivo si aplica</li>
+  </ol>
+  <p class="expected">✓ Múltiples cajeros pueden operar POS con contraseña. Admin mantiene supervisión. Cancelaciones registran motivo.</p>
+</div>
+
+<!-- ==================== SEGURIDAD ==================== -->
+<h2>12. Seguridad y Verificación</h2>
+
+<div class="test-case">
+  <h4>TEST 12.1 — 3 intentos fallidos de contraseña → logout <span class="badge badge-critical">Crítico</span></h4>
+  <ol class="steps">
+    <li>En cualquier acción que pida contraseña (abrir caja, crear orden POS)</li>
+    <li>Ingresar contraseña incorrecta 3 veces seguidas</li>
+  </ol>
+  <p class="expected">✓ Mensaje "Sesión bloqueada". Cierre de sesión automático. Redirige a /login.</p>
+</div>
+
+<div class="test-case">
+  <h4>TEST 12.2 — Inactividad (60 segundos) <span class="badge badge-important">Importante</span></h4>
+  <ol class="steps">
+    <li>Dejar la app sin interacción</li>
+    <li>A los 50 segundos: advertencia</li>
+    <li>A los 60 segundos: cierre de sesión</li>
+  </ol>
+  <p class="expected">✓ Alerta de inactividad aparece. Si no hay acción, cierra sesión automáticamente.</p>
+</div>
+
+<!-- ==================== BACKEND PENDIENTE ==================== -->
+<div class="page-break"></div>
+<h2>13. Items Pendientes de Backend</h2>
+<p>Los siguientes items requieren cambios en el backend (Laravel) que no pueden resolverse desde el frontend:</p>
+
+<table>
+  <tr><th>#</th><th>Item</th><th>Detalle</th></tr>
+  <tr><td>1</td><td>POST /api/users → 405</td><td>El endpoint de creación de usuarios no existe. Se necesita ruta POST en Laravel.</td></tr>
+  <tr><td>2</td><td>Sistema de email</td><td>Notificaciones por email al admin (errores, alertas). Requiere configuración de correo en backend.</td></tr>
+  <tr><td>3</td><td>Foto/evidencia al cerrar caja</td><td>Upload de imagen como evidencia del conteo. Requiere endpoint de upload + storage.</td></tr>
+  <tr><td>4</td><td>Ventas de facturas en caja</td><td>Las ventas por factura no se reflejan en totales de caja registradora (lógica backend).</td></tr>
+  <tr><td>5</td><td>Reporte diario con facturas</td><td>El reporte diario no incluye ventas por facturas (query backend).</td></tr>
+  <tr><td>6</td><td>Reset de contraseña</td><td>Flujo de "olvidé mi contraseña" con código por email.</td></tr>
+  <tr><td>7</td><td>Logs de actividad</td><td>Registro centralizado de acciones del sistema (auditoría general).</td></tr>
+</table>
+
+<div class="note">
+  <strong>Recomendación:</strong> Priorizar item #1 (POST /api/users) para habilitar la creación de usuarios desde el frontend, y item #4/#5 para completar los reportes financieros.
+</div>
+
+<!-- ==================== CHECKLIST RESUMEN ==================== -->
+<h2>14. Checklist Resumen</h2>
+<table>
+  <tr><th>Area</th><th>Test</th><th>Resultado</th><th>Notas</th></tr>
+  <tr><td>Usuarios</td><td>2.1 Password strength</td><td>☐</td><td></td></tr>
+  <tr><td>Usuarios</td><td>2.2 Editar sin password</td><td>☐</td><td></td></tr>
+  <tr><td>Usuarios</td><td>2.3 Eliminar</td><td>☐</td><td></td></tr>
+  <tr><td>Sidebar</td><td>3.1 Admin full</td><td>☐</td><td></td></tr>
+  <tr><td>Sidebar</td><td>3.2 Cajero limitado</td><td>☐</td><td></td></tr>
+  <tr><td>Sidebar</td><td>3.3 User mínimo</td><td>☐</td><td></td></tr>
+  <tr><td>Sidebar</td><td>3.4 URL directo bloqueado</td><td>☐</td><td></td></tr>
+  <tr><td>Caja</td><td>4.1 Abrir + contraseña</td><td>☐</td><td></td></tr>
+  <tr><td>Caja</td><td>4.2 3 intentos → logout</td><td>☐</td><td></td></tr>
+  <tr><td>Caja</td><td>4.3 Cerrar sin diferencia</td><td>☐</td><td></td></tr>
+  <tr><td>Caja</td><td>4.4 Cerrar con faltante</td><td>☐</td><td></td></tr>
+  <tr><td>Caja</td><td>4.5 Cerrar con sobrante</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.1 Primera orden</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.2 Bloqueo nueva orden</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.3 Agregar productos</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.5 Cerrar venta</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.6 Cancelar con motivo</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.7 Sin caja</td><td>☐</td><td></td></tr>
+  <tr><td>POS</td><td>5.8 Limpieza estado</td><td>☐</td><td></td></tr>
+  <tr><td>Facturas</td><td>6.1 Crear con pago</td><td>☐</td><td></td></tr>
+  <tr><td>Facturas</td><td>6.2 Stock español</td><td>☐</td><td></td></tr>
+  <tr><td>Facturas</td><td>6.4 Detalle admin-only</td><td>☐</td><td></td></tr>
+  <tr><td>Compras</td><td>7.1 IVA 19%</td><td>☐</td><td></td></tr>
+  <tr><td>Compras</td><td>7.2 Cancelar con motivo</td><td>☐</td><td></td></tr>
+  <tr><td>Compras</td><td>7.3 Recibir checklist</td><td>☐</td><td></td></tr>
+  <tr><td>Inventario</td><td>8.1 Stock mín obligatorio</td><td>☐</td><td></td></tr>
+  <tr><td>Inventario</td><td>8.2 Filtro stock=0</td><td>☐</td><td></td></tr>
+  <tr><td>Inventario</td><td>8.3 Hora + expandible</td><td>☐</td><td></td></tr>
+  <tr><td>Catálogos</td><td>9.1 Stock bajo proveedores</td><td>☐</td><td></td></tr>
+  <tr><td>Catálogos</td><td>9.2 Email proveedor</td><td>☐</td><td></td></tr>
+  <tr><td>Catálogos</td><td>9.3 Dirección opcional</td><td>☐</td><td></td></tr>
+  <tr><td>Flujo</td><td>10.1 Día suave</td><td>☐</td><td></td></tr>
+  <tr><td>Flujo</td><td>11.1 Día pesado</td><td>☐</td><td></td></tr>
+  <tr><td>Seguridad</td><td>12.1 3 intentos</td><td>☐</td><td></td></tr>
+  <tr><td>Seguridad</td><td>12.2 Inactividad</td><td>☐</td><td></td></tr>
+</table>
+
+</body>
+</html>

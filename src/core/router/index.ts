@@ -3,7 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
-    role?: string
+    role?: string | string[]
     layout?: 'default' | 'auth'
     fullscreen?: boolean
   }

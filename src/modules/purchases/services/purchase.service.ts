@@ -1,6 +1,6 @@
 import api from '@core/api/client'
-import type { PurchaseOrder, Supplier, Product } from '@core/types/models'
-import type { PurchaseOrderForm } from '../types/purchases.types'
+import type { PurchaseOrder, Supplier, Product, Category } from '@core/types/models'
+import type { PurchaseOrderForm, ReceivePurchaseOrderPayload } from '../types/purchases.types'
 
 export async function fetchPurchaseOrders(): Promise<PurchaseOrder[]> {
   const { data } = await api.get('/purchase-orders')
@@ -20,8 +20,15 @@ export async function receivePurchaseOrder(id: number): Promise<void> {
   await api.patch(`/purchase-orders/${id}/receive`)
 }
 
-export async function cancelPurchaseOrder(id: number): Promise<void> {
-  await api.patch(`/purchase-orders/${id}/cancel`)
+export async function receivePurchaseOrderWithChecklist(
+  id: number,
+  payload: ReceivePurchaseOrderPayload
+): Promise<void> {
+  await api.patch(`/purchase-orders/${id}/receive`, payload)
+}
+
+export async function cancelPurchaseOrder(id: number, reason?: string): Promise<void> {
+  await api.patch(`/purchase-orders/${id}/cancel`, reason ? { cancel_reason: reason } : undefined)
 }
 
 export async function fetchSuppliers(): Promise<Supplier[]> {
@@ -31,5 +38,10 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
 
 export async function fetchProducts(): Promise<Product[]> {
   const { data } = await api.get('/products')
+  return data.data ?? data
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  const { data } = await api.get('/categories')
   return data.data ?? data
 }
