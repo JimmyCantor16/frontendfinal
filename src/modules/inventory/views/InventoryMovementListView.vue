@@ -56,11 +56,11 @@
             :rules="[r => r >= 0 || 'Debe ser >= 0']"
             class="mb-2"
           />
-          <v-textarea v-model="adjustForm.reason" label="Razón" rows="2" :rules="[r => !!r || 'Requerido']" />
+          <v-textarea v-model="adjustForm.reason" label="Razón" rows="2" :rules="[r => !!r?.trim() || 'Requerido']" />
           <v-card-actions class="px-0">
             <v-spacer />
             <v-btn variant="text" @click="showAdjustForm = false">Cancelar</v-btn>
-            <v-btn color="primary" type="submit">Aplicar Ajuste</v-btn>
+            <v-btn color="primary" type="submit" :loading="saving">Aplicar Ajuste</v-btn>
           </v-card-actions>
         </v-form>
       </v-card>
@@ -71,6 +71,7 @@
         :headers="headers"
         :items="filteredMovements"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No hay movimientos."
         show-expand
       >
@@ -120,6 +121,8 @@ import { fetchProducts } from '../services/product.service'
 import type { InventoryMovement, Product, InventoryMovementType } from '@core/types/models'
 import type { AdjustmentForm } from '../types/inventory.types'
 
+const loading = ref(false)
+const saving = ref(false)
 const movements = ref<InventoryMovement[]>([])
 const products = ref<Product[]>([])
 const searchQuery = ref('')
@@ -173,12 +176,17 @@ const filteredMovements = computed(() => {
 })
 
 async function loadData() {
-  const [movs, prods] = await Promise.all([
-    inventoryService.fetchMovements(),
-    fetchProducts(),
-  ])
-  movements.value = movs
-  products.value = prods
+  loading.value = true
+  try {
+    const results = await Promise.allSettled([
+      inventoryService.fetchMovements(),
+      fetchProducts(),
+    ])
+    if (results[0].status === 'fulfilled') movements.value = results[0].value
+    if (results[1].status === 'fulfilled') products.value = results[1].value
+  } finally {
+    loading.value = false
+  }
 }
 
 function openAdjustment() {
@@ -187,6 +195,8 @@ function openAdjustment() {
 }
 
 async function saveAdjustment() {
+  if (saving.value) return
+  saving.value = true
   try {
     await inventoryService.adjustInventory(adjustForm.value)
     notifySuccess('Ajuste aplicado')
@@ -194,6 +204,8 @@ async function saveAdjustment() {
     await loadData()
   } catch (err) {
     notifyApiError(err, 'Error al ajustar')
+  } finally {
+    saving.value = false
   }
 }
 

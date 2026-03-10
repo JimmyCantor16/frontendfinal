@@ -23,6 +23,10 @@
       </v-col>
     </v-row>
 
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4" closable @click:close="error = null">
+      {{ error }}
+    </v-alert>
+
     <h3 class="text-h6 text-primary mb-3">Productos con Stock Bajo</h3>
 
     <v-card>
@@ -30,6 +34,7 @@
         :headers="headers"
         :items="lowStock"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No hay productos con stock bajo."
       >
         <template #item.stock="{ item }">
@@ -50,6 +55,7 @@ import type { Product } from '@core/types/models'
 const stats = ref({ ventas_hoy: 0, ventas_mes: 0, facturas_hoy: 0 })
 const lowStock = ref<Product[]>([])
 const loading = ref(false)
+const error = ref<string | null>(null)
 
 const headers = [
   { title: 'SKU', key: 'sku' },
@@ -60,6 +66,7 @@ const headers = [
 
 async function loadDashboard() {
   loading.value = true
+  error.value = null
   try {
     const data = await fetchDashboard()
     stats.value = {
@@ -69,6 +76,7 @@ async function loadDashboard() {
     }
     lowStock.value = data.productos_stock_bajo ?? []
   } catch (err: unknown) {
+    error.value = 'Error al cargar el dashboard. Intenta de nuevo.'
     notifyApiError(err, 'Error al cargar el dashboard')
   } finally {
     loading.value = false

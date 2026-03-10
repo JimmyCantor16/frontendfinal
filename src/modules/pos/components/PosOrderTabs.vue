@@ -1,14 +1,16 @@
 <template>
   <div class="d-flex align-center ga-2 pa-2" style="background: rgb(var(--v-theme-secondary))">
-    <!-- Show current order label only (no multi-tab switching) -->
     <v-chip
-      v-if="posStore.activeOrder"
-      color="primary"
-      variant="flat"
+      v-for="tab in posStore.orderTabs"
+      :key="tab.id"
+      :color="tab.active ? 'primary' : 'grey-lighten-2'"
+      :variant="tab.active ? 'flat' : 'tonal'"
       size="large"
       class="mx-1"
+      style="cursor: pointer"
+      @click="posStore.selectOrder(tab.id)"
     >
-      {{ posStore.activeOrder.order_number }}
+      {{ tab.label }}
     </v-chip>
 
     <v-btn
@@ -17,7 +19,7 @@
       size="small"
       prepend-icon="mdi-plus"
       :loading="creating"
-      :disabled="posStore.creatingOrder || !!posStore.activeOrder || !posStore.cashRegisterOpen"
+      :disabled="posStore.creatingOrder || !posStore.cashRegisterOpen"
       @click="onCreateOrder"
     >
       Nueva Orden

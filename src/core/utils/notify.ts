@@ -30,9 +30,15 @@ export function notifyError(title: string, text?: string): void {
 }
 
 export function notifyApiError(err: unknown, fallback = 'Ocurrió un error'): void {
-  const message =
-    (err as any)?.response?.data?.message || (err as Error)?.message || fallback
-  notifyError('Error', message)
+  let message = fallback
+  if (err && typeof err === 'object') {
+    const axiosErr = err as { response?: { data?: { message?: string; error?: string } }; message?: string }
+    message = axiosErr.response?.data?.message
+      ?? axiosErr.response?.data?.error
+      ?? axiosErr.message
+      ?? fallback
+  }
+  notifyError('Error', String(message))
 }
 
 export async function confirmAction(

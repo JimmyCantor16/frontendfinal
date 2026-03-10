@@ -34,7 +34,13 @@ const routes: RouteRecordRaw[] = [
   ...cashRegisterRoutes,
   ...reportsRoutes,
   ...settingsRoutes,
-  { path: '/:pathMatch(.*)*', redirect: '/login' },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: () => {
+      const token = localStorage.getItem('token')
+      return token ? '/dashboard' : '/login'
+    },
+  },
 ]
 
 const router = createRouter({

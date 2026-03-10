@@ -65,6 +65,9 @@ export const usePosStore = defineStore('pos', () => {
       if (activeOrderId.value && !openOrders.value.find((o) => o.id === activeOrderId.value)) {
         activeOrderId.value = openOrders.value.length ? openOrders.value[0].id : null
       }
+    } catch (err) {
+      notifyError('Error', 'No se pudieron cargar las órdenes abiertas')
+      throw err
     } finally {
       loading.value = false
     }
@@ -79,13 +82,18 @@ export const usePosStore = defineStore('pos', () => {
       activeOrderId.value = order.id
       hasUsedPos.value = true
       lastClosedSale.value = null
+    } catch (err) {
+      notifyError('Error', 'No se pudo crear la orden')
+      throw err
     } finally {
       creatingOrder.value = false
     }
   }
 
   function selectOrder(orderId: number): void {
-    activeOrderId.value = orderId
+    if (openOrders.value.some(o => o.id === orderId)) {
+      activeOrderId.value = orderId
+    }
   }
 
   async function addProduct(product: Product, quantity = 1): Promise<void> {
@@ -116,25 +124,31 @@ export const usePosStore = defineStore('pos', () => {
     if (!cashRegisterOpen.value) {
       throw new Error('No hay caja abierta. Abre una caja antes de cobrar.')
     }
-    const closingOrder = activeOrder.value
+    if (!cartItems.value.length) {
+      throw new Error('La orden no tiene productos.')
+    }
+
+    const closingOrderNumber = activeOrder.value?.order_number ?? ''
+    const closingTotal = cartTotal.value
+    const closingItemCount = activeOrder.value?.items.length ?? 0
+
     await posService.closeOrder(activeOrderId.value, { payment_method: paymentMethod, client_id: clientId ?? undefined })
 
-    if (closingOrder) {
-      lastClosedSale.value = {
-        orderNumber: closingOrder.order_number,
-        total: cartTotal.value,
-        paymentMethod,
-        itemCount: closingOrder.items.length,
-        closedAt: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-      }
+    lastClosedSale.value = {
+      orderNumber: closingOrderNumber,
+      total: closingTotal,
+      paymentMethod,
+      itemCount: closingItemCount,
+      closedAt: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
     }
     hasUsedPos.value = true
     activeOrderId.value = null
-    await loadOpenOrders()
-    const inventoryStore = useInventoryStore()
-    await inventoryStore.loadProducts()
-    const crStore = useCashRegisterStore()
-    await crStore.loadCurrent()
+
+    await Promise.allSettled([
+      loadOpenOrders(),
+      useInventoryStore().loadProducts(),
+      useCashRegisterStore().loadCurrent(),
+    ])
   }
 
   async function cancelOrder(reason?: string): Promise<void> {
@@ -142,11 +156,12 @@ export const usePosStore = defineStore('pos', () => {
     await posService.cancelOrder(activeOrderId.value, reason)
     lastClosedSale.value = null
     activeOrderId.value = null
-    await loadOpenOrders()
-    const inventoryStore = useInventoryStore()
-    await inventoryStore.loadProducts()
-    const crStore = useCashRegisterStore()
-    await crStore.loadCurrent()
+
+    await Promise.allSettled([
+      loadOpenOrders(),
+      useInventoryStore().loadProducts(),
+      useCashRegisterStore().loadCurrent(),
+    ])
     notifySuccess('Orden cancelada')
   }
 

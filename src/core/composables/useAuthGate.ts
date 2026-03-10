@@ -4,9 +4,9 @@ import { promptPassword, notifyError } from '@core/utils/notify'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 
 const MAX_ATTEMPTS = 3
-const failedAttempts = ref(0)
 
 export function useAuthGate() {
+  const failedAttempts = ref(0)
   const authStore = useAuthStore()
 
   function resetAttempts() {

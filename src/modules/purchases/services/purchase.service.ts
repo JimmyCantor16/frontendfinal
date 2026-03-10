@@ -28,7 +28,7 @@ export async function receivePurchaseOrderWithChecklist(
 }
 
 export async function cancelPurchaseOrder(id: number, reason?: string): Promise<void> {
-  await api.patch(`/purchase-orders/${id}/cancel`, reason ? { cancel_reason: reason } : undefined)
+  await api.patch(`/purchase-orders/${id}/cancel`, { cancel_reason: reason || '' })
 }
 
 export async function fetchSuppliers(): Promise<Supplier[]> {

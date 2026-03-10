@@ -24,7 +24,7 @@
         </v-card-title>
         <v-form @submit.prevent="save">
           <v-text-field v-model="form.name" label="Nombre" :rules="[r => !!r || 'Requerido']" class="mb-2" />
-          <v-text-field v-model="form.nit" label="NIT" :rules="[r => !!r || 'Requerido']" class="mb-2" />
+          <v-text-field v-model="form.nit" label="NIT" :rules="[r => !!r || 'Requerido', r => /^[\d\-]{5,20}$/.test(r) || 'NIT inválido (solo dígitos y guiones, 5-20 caracteres)']" class="mb-2" />
           <v-text-field v-model="form.phone" label="Teléfono" class="mb-2" />
           <v-text-field v-model="form.email" label="Email" type="email" :rules="[v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Email no válido']" class="mb-2" />
           <v-text-field v-model="form.contact_person" label="Persona de Contacto" class="mb-2" />
@@ -66,6 +66,7 @@
         :headers="headers"
         :items="filtered"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No se encontraron proveedores."
       >
         <template #item.is_active="{ item }">
@@ -90,6 +91,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCrud } from '@core/composables/useCrud'
 import { formatCOP } from '@core/utils/format'
+import { filterLowStockProducts } from '@core/utils/product'
 import { useInventoryStore } from '@modules/inventory/store/inventory.store'
 import type { Supplier, Product } from '@core/types/models'
 import type { SupplierForm } from '../types/catalog.types'
@@ -97,12 +99,7 @@ import type { SupplierForm } from '../types/catalog.types'
 const inventoryStore = useInventoryStore()
 const allProducts = ref<Product[]>([])
 
-const lowStockProducts = computed(() =>
-  allProducts.value.filter((p) => {
-    const minStock = Number(p.minimum_stock) || 0
-    return p.is_active && (p.stock === 0 || (minStock > 0 && p.stock <= minStock))
-  })
-)
+const lowStockProducts = computed(() => filterLowStockProducts(allProducts.value))
 
 const lowStockHeaders = [
   { title: 'SKU', key: 'sku' },
@@ -123,7 +120,7 @@ const headers = [
 ]
 
 const {
-  search, showForm, editingId, form, filtered,
+  search, showForm, editingId, form, filtered, loading,
   fetchData, openForm, editItem, save, remove,
 } = useCrud<Supplier, SupplierForm>({
   endpoint: '/suppliers',
@@ -145,8 +142,12 @@ function onEdit(s: Supplier) {
 }
 
 onMounted(async () => {
-  await fetchData()
-  await inventoryStore.loadProducts()
-  allProducts.value = inventoryStore.products
+  const results = await Promise.allSettled([
+    fetchData(),
+    inventoryStore.loadProducts(),
+  ])
+  if (results[1].status === 'fulfilled') {
+    allProducts.value = inventoryStore.products
+  }
 })
 </script>

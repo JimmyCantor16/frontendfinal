@@ -41,6 +41,7 @@
         :headers="headers"
         :items="filtered"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No se encontraron categorías."
       >
         <template #item.actions="{ item }">
@@ -69,13 +70,13 @@ const headers = [
 ]
 
 const {
-  search, showForm, editingId, form, filtered,
+  search, showForm, editingId, form, filtered, loading,
   fetchData, openForm, editItem, save, remove,
 } = useCrud<Category, CategoryForm>({
   endpoint: '/categories',
   entityName: 'Categoría',
   defaultForm: () => ({ name: '', description: '' }),
-  searchFilter: (item, q) => item.name.toLowerCase().includes(q),
+  searchFilter: (item, q) => item.name?.toLowerCase().includes(q) ?? false,
 })
 
 function onEdit(cat: Category) {

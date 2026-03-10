@@ -75,7 +75,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const invoice = ref<Invoice | null>(null)
 
-const isAdmin = computed(() => authStore.user?.role === 'admin')
+const isAdmin = computed(() => authStore.user?.role?.toLowerCase() === 'admin')
 
 const itemHeaders = [
   { title: 'Producto', key: 'product' },

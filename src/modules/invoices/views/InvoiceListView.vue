@@ -157,6 +157,7 @@
         :headers="headers"
         :items="filteredInvoices"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No hay facturas."
       >
         <template #item.invoice_number="{ item }">{{ item.invoice_number ?? item.id }}</template>
@@ -196,6 +197,7 @@ const authStore = useAuthStore()
 const userRole = computed(() => (authStore.user?.role ?? '').toLowerCase())
 const isAdmin = computed(() => !userRole.value || userRole.value === 'admin')
 
+const loading = ref(false)
 const invoices = ref<Invoice[]>([])
 const clients = ref<Client[]>([])
 const products = ref<Product[]>([])
@@ -308,7 +310,7 @@ async function saveInvoice() {
   const depletedProducts = form.value.items
     .map((item) => {
       const prod = products.value.find((p) => String(p.id) === String(item.product_id))
-      return prod && prod.stock === item.quantity ? prod.name : null
+      return prod && prod.stock <= item.quantity ? prod.name : null
     })
     .filter(Boolean)
 
@@ -357,7 +359,12 @@ async function saveClient() {
 }
 
 async function loadInvoices() {
-  invoices.value = await invoiceService.fetchInvoices()
+  loading.value = true
+  try {
+    invoices.value = await invoiceService.fetchInvoices()
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {

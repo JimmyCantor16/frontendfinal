@@ -44,6 +44,7 @@
               label="Cant."
               type="number"
               min="1"
+              step="1"
               style="max-width: 100px"
               hide-details
             />
@@ -90,6 +91,7 @@
         :headers="headers"
         :items="filteredOrders"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No hay órdenes de compra."
       >
         <template #item.order_number="{ item }">{{ item.order_number ?? item.id }}</template>
@@ -117,11 +119,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { formatCOP, formatDate } from '@core/utils/format'
-import { notifySuccess, notifyApiError } from '@core/utils/notify'
+import { notifySuccess, notifyError, notifyApiError } from '@core/utils/notify'
 import * as purchaseService from '../services/purchase.service'
 import type { PurchaseOrder, Supplier, Product, PurchaseOrderStatus, Category } from '@core/types/models'
 import type { PurchaseOrderForm } from '../types/purchases.types'
 
+const loading = ref(false)
 const orders = ref<PurchaseOrder[]>([])
 const suppliers = ref<Supplier[]>([])
 const products = ref<Product[]>([])
@@ -203,6 +206,10 @@ function removeItem(i: number) {
 }
 
 async function saveOrder() {
+  if (!form.value.items.length || form.value.items.every(i => !i.product_id)) {
+    notifyError('Validación', 'Debe agregar al menos un item')
+    return
+  }
   try {
     await purchaseService.createPurchaseOrder(form.value)
     notifySuccess('Orden creada')
@@ -214,7 +221,12 @@ async function saveOrder() {
 }
 
 async function loadOrders() {
-  orders.value = await purchaseService.fetchPurchaseOrders()
+  loading.value = true
+  try {
+    orders.value = await purchaseService.fetchPurchaseOrders()
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => loadOrders())

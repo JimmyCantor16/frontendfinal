@@ -236,7 +236,8 @@ const calculatedTax = computed(() => {
   if (!order.value) return 0
   const tax = Number(order.value.tax ?? 0)
   if (tax > 0) return tax
-  return Number(order.value.total ?? 0) - Number(order.value.subtotal ?? 0)
+  const diff = Number(order.value.total ?? 0) - Number(order.value.subtotal ?? 0)
+  return diff < 0 ? 0 : diff
 })
 
 const statusLabel = (s: PurchaseOrderStatus) =>
@@ -252,7 +253,7 @@ const checklistValid = computed(() =>
   checklistRows.value.every((row) =>
     row.received_quantity >= 0 &&
     row.returned_quantity >= 0 &&
-    (row.returned_quantity === 0 || row.return_reason.trim().length > 0)
+    (row.returned_quantity === 0 || !!row.return_reason?.trim())
   )
 )
 
@@ -284,6 +285,12 @@ async function submitChecklist() {
     'Confirmar'
   )
   if (!confirmed) return
+
+  const invalidQty = checklistRows.value.some((row) => row.received_quantity > row.orderedQty)
+  if (invalidQty) {
+    notifyApiError(null, 'La cantidad recibida no puede superar la cantidad pedida')
+    return
+  }
 
   submittingChecklist.value = true
   try {

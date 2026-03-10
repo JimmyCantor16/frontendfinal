@@ -107,7 +107,7 @@
                 <span>{{ methodPercentage(method.amount) }}%</span>
               </div>
               <v-progress-linear
-                :model-value="report.ordenes_pos.ventas ? (Number(method.amount) / Number(report.ordenes_pos.ventas)) * 100 : 0"
+                :model-value="Number(report.ordenes_pos.ventas) ? ((Number(method.amount) || 0) / Number(report.ordenes_pos.ventas)) * 100 : 0"
                 :color="method.color"
                 height="8"
                 rounded
@@ -204,9 +204,10 @@ const paymentMethodRows = computed(() => {
 })
 
 function methodPercentage(amount: number): string {
+  const num = Number(amount) || 0
   const totalPos = Number(report.value?.ordenes_pos?.ventas ?? 0)
   if (!totalPos) return '0'
-  return ((Number(amount) / totalPos) * 100).toFixed(1)
+  return ((num / totalPos) * 100).toFixed(1)
 }
 
 function formatTime(d: string | undefined | null): string {

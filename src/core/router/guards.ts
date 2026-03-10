@@ -13,7 +13,8 @@ export function authGuard(
   }
 
   if (to.meta.role) {
-    const allowed = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role]
+    const allowed = (Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role])
+      .map((r: string) => r.toLowerCase())
     const role = (auth.user?.role ?? '').toLowerCase()
     if (role && !allowed.includes(role)) {
       return next('/dashboard')

@@ -42,7 +42,7 @@
             :type="showPassword ? 'text' : 'password'"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
             @click:append-inner="showPassword = !showPassword"
-            :rules="editingId ? [] : [r => !!r || 'Requerido', r => !r || r.length >= 8 || 'Mínimo 8 caracteres']"
+            :rules="editingId ? [r => !r || r.length >= 8 || 'Mínimo 8 caracteres'] : [r => !!r || 'Requerido', r => !r || r.length >= 8 || 'Mínimo 8 caracteres']"
             :hint="editingId ? 'Dejar vacío para no cambiar' : ''"
             :persistent-hint="!!editingId"
             class="mb-1"
@@ -176,7 +176,7 @@ const passwordStrengthLabel = computed(() => {
 const passwordChecks = computed(() => {
   const p = form.value.password || ''
   const checks: string[] = []
-  if (p.length < 8) checks.push('8+ chars')
+  if (p.length < 8) checks.push('8+ caracteres')
   if (!/[A-Z]/.test(p)) checks.push('mayúscula')
   if (!/[a-z]/.test(p)) checks.push('minúscula')
   if (!/\d/.test(p)) checks.push('número')

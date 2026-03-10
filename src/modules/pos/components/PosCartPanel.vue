@@ -40,7 +40,7 @@
         block
         size="large"
         class="mb-2"
-        :disabled="!posStore.cartItems.length || !posStore.cashRegisterOpen"
+        :disabled="!posStore.cartItems.length || !posStore.cashRegisterOpen || processing"
         prepend-icon="mdi-point-of-sale"
         @click="$emit('open-payment')"
       >
@@ -50,7 +50,7 @@
         color="error"
         variant="outlined"
         block
-        :disabled="!posStore.activeOrder || !posStore.cashRegisterOpen"
+        :disabled="!posStore.activeOrder || !posStore.cashRegisterOpen || processing"
         @click="onCancel"
       >
         Cancelar Orden
@@ -60,12 +60,14 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { usePosStore } from '../store/pos.store'
 import { formatCOP } from '@core/utils/format'
 import { notifyApiError, promptInput, confirmAction } from '@core/utils/notify'
 import PosCartItem from './PosCartItem.vue'
 
 const posStore = usePosStore()
+const processing = ref(false)
 
 defineEmits<{
   'open-payment': []
@@ -78,10 +80,13 @@ async function onRemoveItem(itemId: number) {
     'Sí, quitar'
   )
   if (!confirmed) return
+  processing.value = true
   try {
     await posStore.removeItem(itemId)
   } catch (err) {
     notifyApiError(err, 'Error al quitar item')
+  } finally {
+    processing.value = false
   }
 }
 
@@ -92,10 +97,13 @@ async function onCancel() {
     'Motivo de cancelación...'
   )
   if (!reason) return
+  processing.value = true
   try {
     await posStore.cancelOrder(reason)
   } catch (err) {
     notifyApiError(err, 'Error al cancelar orden')
+  } finally {
+    processing.value = false
   }
 }
 </script>

@@ -176,6 +176,7 @@
                 size="large"
                 prepend-icon="mdi-lock"
                 :loading="closing"
+                :disabled="saving"
               >
                 Cerrar Caja
               </v-btn>
@@ -192,7 +193,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCashRegisterStore } from '../store/cash-register.store'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 import { useAuthGate } from '@core/composables/useAuthGate'
-import { formatCOP } from '@core/utils/format'
+import { formatCOP, formatTime } from '@core/utils/format'
 import { notifySuccess, notifyError, notifyApiError, confirmAction } from '@core/utils/notify'
 
 const store = useCashRegisterStore()
@@ -206,6 +207,7 @@ const closingAmount = ref(0)
 const closingNotes = ref('')
 const differenceReason = ref('')
 const closing = ref(false)
+const saving = ref(false)
 const closeFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
 
 const expectedAmount = computed(() =>
@@ -217,18 +219,13 @@ const closingDifference = computed(() =>
 )
 
 const differenceAlertClass = computed(() => {
-  if (closingDifference.value === 0) return 'bg-grey-lighten-4'
-  return 'bg-grey-lighten-4'
+  if (closingDifference.value === 0) return 'bg-green-lighten-4'
+  return 'bg-red-lighten-4'
 })
 
 function formatDate(d: string | undefined | null): string {
   if (!d) return ''
   return new Date(d).toLocaleDateString('es-CO')
-}
-
-function formatTime(d: string | undefined | null): string {
-  if (!d) return ''
-  return new Date(d).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 }
 
 async function onOpen() {
@@ -274,6 +271,7 @@ async function onClose() {
   if (!confirmed) return
 
   closing.value = true
+  saving.value = true
   try {
     const notes = [
       differenceReason.value.trim() ? `Motivo diferencia: ${differenceReason.value.trim()}` : '',
@@ -292,6 +290,7 @@ async function onClose() {
     notifyApiError(err, 'Error al cerrar caja')
   } finally {
     closing.value = false
+    saving.value = false
   }
 }
 

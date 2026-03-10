@@ -256,11 +256,15 @@ async function onAddProduct(product: Product) {
 
 onMounted(async () => {
   try {
-    await Promise.all([
+    const results = await Promise.allSettled([
       posStore.loadOpenOrders(),
       inventoryStore.loadAll(),
       crStore.loadCurrent(),
     ])
+    const failed = results.filter((r) => r.status === 'rejected')
+    if (failed.length) {
+      notifyApiError((failed[0] as PromiseRejectedResult).reason, 'Error al cargar datos del POS')
+    }
     if (posStore.openOrders.length > 0) {
       posStore.hasUsedPos = true
     }

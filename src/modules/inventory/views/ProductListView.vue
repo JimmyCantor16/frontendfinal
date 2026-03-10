@@ -66,10 +66,10 @@
           />
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model.number="form.purchase_price" label="Precio Compra" type="number" min="0" step="0.01" />
+              <v-text-field v-model.number="form.purchase_price" label="Precio Compra" type="number" min="0" step="0.01" :rules="[v => v >= 0 || 'Debe ser >= 0']" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model.number="form.sale_price" label="Precio Venta" type="number" min="0" step="0.01" />
+              <v-text-field v-model.number="form.sale_price" label="Precio Venta" type="number" min="0" step="0.01" :rules="[v => v > 0 || 'Debe ser mayor a 0']" />
             </v-col>
           </v-row>
           <v-row>
@@ -95,6 +95,7 @@
         :headers="headers"
         :items="tableItems"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No se encontraron productos."
       >
         <template #item.purchase_price="{ item }">{{ formatCOP(item.purchase_price) }}</template>
@@ -130,6 +131,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCrud } from '@core/composables/useCrud'
 import { formatCOP } from '@core/utils/format'
+import { filterLowStockProducts } from '@core/utils/product'
 import { useInventoryStore } from '../store/inventory.store'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 import type { Product } from '@core/types/models'
@@ -138,7 +140,7 @@ import type { ProductForm } from '../types/inventory.types'
 const inventoryStore = useInventoryStore()
 const authStore = useAuthStore()
 const userRole = computed(() => (authStore.user?.role ?? '').toLowerCase())
-const isAdmin = computed(() => !userRole.value || userRole.value === 'admin')
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const filterCategory = ref<number | string>('')
 const filterLowStock = ref(false)
@@ -165,15 +167,10 @@ const headers = computed(() =>
     : baseHeaders
 )
 
-const lowStockProducts = computed(() =>
-  (filtered.value as Product[]).filter((p) => {
-    const minStock = Number(p.minimum_stock) || 0
-    return p.is_active && (p.stock === 0 || (minStock > 0 && p.stock <= minStock))
-  })
-)
+const lowStockProducts = computed(() => filterLowStockProducts(filtered.value as Product[]))
 
 const {
-  search, showForm, editingId, form, filtered,
+  search, showForm, editingId, form, filtered, loading,
   fetchData, openForm, editItem, save, remove,
 } = useCrud<Product, ProductForm>({
   endpoint: '/products',
@@ -188,7 +185,7 @@ const {
 
 const tableItems = computed(() => {
   let list = filtered.value
-  if (filterCategory.value) list = list.filter((p) => String(p.category_id) === String(filterCategory.value))
+  if (filterCategory.value) list = list.filter((p) => String(p.category_id || '') === String(filterCategory.value))
   if (filterLowStock.value) list = list.filter((p) => {
     const minStock = Number(p.minimum_stock) || 0
     return p.stock === 0 || (minStock > 0 && p.stock <= minStock)
