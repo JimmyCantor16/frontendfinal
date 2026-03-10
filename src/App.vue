@@ -26,7 +26,8 @@ const layout = computed(() => {
   return layouts[name] || DefaultLayout
 })
 
-onMounted(() => {
+onMounted(async () => {
   authStore.restoreInactivity()
+  await authStore.validateToken()
 })
 </script>

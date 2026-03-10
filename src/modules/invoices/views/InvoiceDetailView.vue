@@ -54,7 +54,7 @@
         <template #item.subtotal="{ item }">{{ formatCOP(item.subtotal ?? item.quantity * item.unit_price) }}</template>
       </v-data-table>
 
-      <div v-if="invoice.status === 'completed'" class="mt-6">
+      <div v-if="invoice.status === 'completed' && isAdmin" class="mt-6">
         <v-btn color="error" @click="onCancel">Cancelar Factura</v-btn>
       </div>
     </v-card>
@@ -65,13 +65,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatCOP, formatDate } from '@core/utils/format'
-import { notifySuccess, notifyApiError, confirmAction } from '@core/utils/notify'
+import { notifySuccess, notifyError, notifyApiError, confirmAction, promptPassword } from '@core/utils/notify'
+import { useAuthStore } from '@modules/auth/store/auth.store'
 import * as invoiceService from '../services/invoice.service'
 import type { Invoice, InvoiceStatus } from '@core/types/models'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const invoice = ref<Invoice | null>(null)
+
+const isAdmin = computed(() => authStore.user?.role?.toLowerCase() === 'admin')
 
 const itemHeaders = [
   { title: 'Producto', key: 'product' },
@@ -84,7 +88,6 @@ const calculatedTax = computed(() => {
   if (!invoice.value) return 0
   const tax = Number(invoice.value.tax ?? 0)
   if (tax > 0) return tax
-  // Si el backend no envía tax, calcular como: total - subtotal
   return Number(invoice.value.total ?? 0) - Number(invoice.value.subtotal ?? 0)
 })
 
@@ -105,14 +108,26 @@ async function onCancel() {
     'Se revertirán los cambios en inventario',
     'Sí, cancelar'
   )
-  if (confirmed && invoice.value) {
-    try {
-      await invoiceService.cancelInvoice(invoice.value.id)
-      notifySuccess('Factura cancelada')
-      await loadInvoice()
-    } catch (err) {
-      notifyApiError(err, 'Error al cancelar')
-    }
+  if (!confirmed || !invoice.value) return
+
+  const password = await promptPassword(
+    'Verificación de administrador',
+    'Ingrese su contraseña para confirmar la cancelación'
+  )
+  if (!password) return
+
+  const valid = await invoiceService.verifyAdminPassword(password)
+  if (!valid) {
+    notifyError('Contraseña incorrecta', 'La contraseña ingresada no es válida.')
+    return
+  }
+
+  try {
+    await invoiceService.cancelInvoice(invoice.value.id)
+    notifySuccess('Factura cancelada')
+    await loadInvoice()
+  } catch (err) {
+    notifyApiError(err, 'Error al cancelar')
   }
 }
 

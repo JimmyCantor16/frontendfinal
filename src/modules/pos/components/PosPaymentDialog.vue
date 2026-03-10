@@ -45,7 +45,7 @@
       </v-card-text>
 
       <v-card-actions>
-        <v-btn variant="text" @click="$emit('update:modelValue', false)">Cancelar</v-btn>
+        <v-btn variant="text" :disabled="processing" @click="$emit('update:modelValue', false)">Cancelar</v-btn>
         <v-spacer />
         <v-btn
           color="success"
@@ -62,14 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { formatCOP } from '@core/utils/format'
 import { notifySuccess, notifyApiError } from '@core/utils/notify'
 import { usePosStore } from '../store/pos.store'
 import { fetchClients } from '@modules/catalog/services/client.service'
 import type { PaymentMethod, Client } from '@core/types/models'
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean
   total: number
 }>()
@@ -83,6 +83,7 @@ const selected = ref<PaymentMethod | ''>('')
 const processing = ref(false)
 const selectedClient = ref<number | null>(null)
 const clients = ref<Client[]>([])
+const clientsLoaded = ref(false)
 
 const clientOptions = computed(() =>
   clients.value.map((c) => ({
@@ -114,11 +115,17 @@ async function onConfirm() {
   }
 }
 
-onMounted(async () => {
-  try {
-    clients.value = await fetchClients()
-  } catch {
-    // Clients are optional — fail silently
+watch(
+  () => props.modelValue,
+  async (open) => {
+    if (open && !clientsLoaded.value) {
+      try {
+        clients.value = await fetchClients()
+        clientsLoaded.value = true
+      } catch {
+        // Clients are optional — fail silently
+      }
+    }
   }
-})
+)
 </script>

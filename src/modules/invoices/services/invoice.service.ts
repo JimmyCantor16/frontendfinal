@@ -1,6 +1,7 @@
 import api from '@core/api/client'
 import type { Invoice, Client, Product } from '@core/types/models'
 import type { InvoiceForm } from '../types/invoices.types'
+import type { ClientForm } from '@modules/catalog/types/catalog.types'
 
 export async function fetchInvoices(): Promise<Invoice[]> {
   const { data } = await api.get('/invoices')
@@ -27,5 +28,12 @@ export async function fetchClients(): Promise<Client[]> {
 
 export async function fetchProducts(): Promise<Product[]> {
   const { data } = await api.get('/products')
+  return data.data ?? data
+}
+
+export { verifyPassword as verifyAdminPassword } from '@core/services/auth-verify.service'
+
+export async function createClient(form: ClientForm): Promise<Client> {
+  const { data } = await api.post('/clients', form)
   return data.data ?? data
 }

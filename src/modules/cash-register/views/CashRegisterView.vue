@@ -107,7 +107,7 @@
         <v-col cols="12" md="5">
           <v-card class="pa-6">
             <v-card-title class="text-h6 text-error mb-4">Cerrar Caja</v-card-title>
-            <v-form @submit.prevent="onClose">
+            <v-form ref="closeFormRef" @submit.prevent="onClose">
               <v-text-field
                 v-model.number="closingAmount"
                 label="Monto en caja (conteo)"
@@ -118,18 +118,12 @@
                 :rules="[r => r >= 0 || 'Debe ser >= 0']"
                 class="mb-2"
               />
-              <v-textarea
-                v-model="closingNotes"
-                label="Notas (opcional)"
-                rows="3"
-                class="mb-2"
-              />
 
-              <div v-if="closingAmount > 0" class="mb-4 pa-3 bg-grey-lighten-4 rounded">
+              <div v-if="closingAmount > 0" class="mb-4 pa-3 rounded" :class="differenceAlertClass">
                 <div class="d-flex justify-space-between text-body-2">
-                  <span>Esperado:</span>
+                  <span>Esperado (Apertura + Efectivo):</span>
                   <span class="font-weight-bold">
-                    {{ formatCOP(Number(store.current!.opening_amount ?? 0) + Number(store.current!.total_cash ?? 0)) }}
+                    {{ formatCOP(expectedAmount) }}
                   </span>
                 </div>
                 <div class="d-flex justify-space-between text-body-2">
@@ -148,6 +142,33 @@
                 </div>
               </div>
 
+              <v-alert
+                v-if="closingAmount > 0 && closingDifference !== 0"
+                :type="closingDifference < 0 ? 'error' : 'warning'"
+                density="compact"
+                class="mb-3"
+                variant="tonal"
+              >
+                {{ closingDifference < 0 ? 'Faltante detectado' : 'Sobrante detectado' }} — debes explicar la diferencia.
+              </v-alert>
+
+              <v-textarea
+                v-model="differenceReason"
+                v-if="closingAmount > 0 && closingDifference !== 0"
+                label="Motivo de la diferencia"
+                rows="2"
+                :rules="[r => !!r?.trim() || 'Debes explicar la diferencia']"
+                class="mb-2"
+                placeholder="Explica por qué el monto contado no coincide con el esperado..."
+              />
+
+              <v-textarea
+                v-model="closingNotes"
+                label="Notas adicionales (opcional)"
+                rows="2"
+                class="mb-2"
+              />
+
               <v-btn
                 type="submit"
                 color="error"
@@ -155,6 +176,7 @@
                 size="large"
                 prepend-icon="mdi-lock"
                 :loading="closing"
+                :disabled="saving"
               >
                 Cerrar Caja
               </v-btn>
@@ -169,21 +191,36 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useCashRegisterStore } from '../store/cash-register.store'
-import { formatCOP } from '@core/utils/format'
-import { notifySuccess, notifyApiError, confirmAction } from '@core/utils/notify'
+import { useAuthStore } from '@modules/auth/store/auth.store'
+import { useAuthGate } from '@core/composables/useAuthGate'
+import { formatCOP, formatTime } from '@core/utils/format'
+import { notifySuccess, notifyError, notifyApiError, confirmAction } from '@core/utils/notify'
 
 const store = useCashRegisterStore()
+const authStore = useAuthStore()
+const { requirePassword } = useAuthGate()
 
 const openingAmount = ref(0)
 const opening = ref(false)
 
 const closingAmount = ref(0)
 const closingNotes = ref('')
+const differenceReason = ref('')
 const closing = ref(false)
+const saving = ref(false)
+const closeFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
 
-const closingDifference = computed(() => {
-  const expected = Number(store.current?.opening_amount ?? 0) + Number(store.current?.total_cash ?? 0)
-  return closingAmount.value - expected
+const expectedAmount = computed(() =>
+  Number(store.current?.opening_amount ?? 0) + Number(store.current?.total_cash ?? 0)
+)
+
+const closingDifference = computed(() =>
+  closingAmount.value - expectedAmount.value
+)
+
+const differenceAlertClass = computed(() => {
+  if (closingDifference.value === 0) return 'bg-green-lighten-4'
+  return 'bg-red-lighten-4'
 })
 
 function formatDate(d: string | undefined | null): string {
@@ -191,12 +228,16 @@ function formatDate(d: string | undefined | null): string {
   return new Date(d).toLocaleDateString('es-CO')
 }
 
-function formatTime(d: string | undefined | null): string {
-  if (!d) return ''
-  return new Date(d).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-}
-
 async function onOpen() {
+  const role = (authStore.user?.role ?? '').toLowerCase()
+  if (role && role !== 'admin' && role !== 'cajero') {
+    notifyError('Acceso denegado', 'Solo administradores y cajeros pueden abrir caja')
+    return
+  }
+
+  const verified = await requirePassword('Abrir Caja', 'Ingresa tu contraseña para abrir la caja')
+  if (!verified) return
+
   opening.value = true
   try {
     await store.openRegister({ opening_amount: openingAmount.value })
@@ -209,6 +250,19 @@ async function onOpen() {
 }
 
 async function onClose() {
+  if (closeFormRef.value) {
+    const { valid } = await closeFormRef.value.validate()
+    if (!valid) return
+  }
+
+  if (closingDifference.value !== 0 && !differenceReason.value.trim()) {
+    notifyError('Motivo requerido', 'Debes explicar la diferencia entre el monto esperado y el contado.')
+    return
+  }
+
+  const verified = await requirePassword('Cerrar Caja', 'Ingresa tu contraseña para cerrar la caja')
+  if (!verified) return
+
   const confirmed = await confirmAction(
     '¿Cerrar la caja?',
     'Se generará el resumen de cierre. Esta acción no se puede deshacer.',
@@ -217,18 +271,26 @@ async function onClose() {
   if (!confirmed) return
 
   closing.value = true
+  saving.value = true
   try {
+    const notes = [
+      differenceReason.value.trim() ? `Motivo diferencia: ${differenceReason.value.trim()}` : '',
+      closingNotes.value.trim() || '',
+    ].filter(Boolean).join(' | ')
+
     await store.closeRegister({
       closing_amount: closingAmount.value,
-      notes: closingNotes.value || undefined,
+      notes: notes || undefined,
     })
     notifySuccess('Caja cerrada')
     closingAmount.value = 0
     closingNotes.value = ''
+    differenceReason.value = ''
   } catch (err) {
     notifyApiError(err, 'Error al cerrar caja')
   } finally {
     closing.value = false
+    saving.value = false
   }
 }
 

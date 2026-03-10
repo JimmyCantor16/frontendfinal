@@ -19,21 +19,32 @@
             class="mb-2"
           />
 
+          <v-select
+            v-model="formCategoryFilter"
+            :items="categoryOptions"
+            label="Filtrar productos por categoría"
+            hide-details
+            clearable
+            class="mb-3"
+          />
+
           <div class="text-subtitle-2 mb-2">Items</div>
           <div v-for="(item, i) in form.items" :key="i" class="d-flex ga-2 align-center mb-2">
             <v-select
               v-model="item.product_id"
-              :items="productOptions"
+              :items="filteredProductOptions"
               label="Producto"
               :rules="[r => !!r || 'Requerido']"
               style="flex: 2"
               hide-details
+              @update:model-value="onProductSelected(item)"
             />
             <v-text-field
               v-model.number="item.quantity"
               label="Cant."
               type="number"
               min="1"
+              step="1"
               style="max-width: 100px"
               hide-details
             />
@@ -63,17 +74,33 @@
       </v-card>
     </v-dialog>
 
+    <v-row class="mb-4">
+      <v-col cols="12" sm="4">
+        <v-text-field
+          v-model="search"
+          prepend-inner-icon="mdi-magnify"
+          label="Buscar orden..."
+          single-line
+          hide-details
+        />
+      </v-col>
+    </v-row>
+
     <v-card>
       <v-data-table
         :headers="headers"
-        :items="orders"
+        :items="filteredOrders"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No hay órdenes de compra."
       >
         <template #item.order_number="{ item }">{{ item.order_number ?? item.id }}</template>
         <template #item.supplier="{ item }">{{ item.supplier?.name }}</template>
         <template #item.status="{ item }">
-          <v-chip :color="statusColor(item.status)" size="small">{{ statusLabel(item.status) }}</v-chip>
+          <v-chip :color="statusColor(item.status)" size="small" variant="flat">
+            <v-icon start size="small">{{ statusIcon(item.status) }}</v-icon>
+            {{ statusLabel(item.status) }}
+          </v-chip>
         </template>
         <template #item.subtotal="{ item }">{{ formatCOP(item.subtotal) }}</template>
         <template #item.tax="{ item }">{{ formatCOP(item.tax) }}</template>
@@ -92,19 +119,42 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { formatCOP, formatDate } from '@core/utils/format'
-import { notifySuccess, notifyApiError } from '@core/utils/notify'
+import { notifySuccess, notifyError, notifyApiError } from '@core/utils/notify'
 import * as purchaseService from '../services/purchase.service'
-import type { PurchaseOrder, Supplier, Product, PurchaseOrderStatus } from '@core/types/models'
+import type { PurchaseOrder, Supplier, Product, PurchaseOrderStatus, Category } from '@core/types/models'
 import type { PurchaseOrderForm } from '../types/purchases.types'
 
+const loading = ref(false)
 const orders = ref<PurchaseOrder[]>([])
 const suppliers = ref<Supplier[]>([])
 const products = ref<Product[]>([])
+const categories = ref<Category[]>([])
 const showForm = ref(false)
+const search = ref('')
+const formCategoryFilter = ref<number | string>('')
 const form = ref<PurchaseOrderForm>({ supplier_id: '', items: [] })
 
+const filteredOrders = computed(() => {
+  const q = search.value.toLowerCase()
+  if (!q) return orders.value
+  return orders.value.filter((o) =>
+    (o.order_number?.toLowerCase().includes(q)) ||
+    (o.supplier?.name?.toLowerCase().includes(q))
+  )
+})
+
 const supplierOptions = computed(() => suppliers.value.map((s) => ({ title: s.name, value: s.id })))
-const productOptions = computed(() => products.value.map((p) => ({ title: p.name, value: p.id })))
+const categoryOptions = computed(() => [
+  { title: 'Todos', value: '' },
+  ...categories.value.map((c) => ({ title: c.name, value: c.id })),
+])
+const filteredProductOptions = computed(() => {
+  let list = products.value
+  if (formCategoryFilter.value) {
+    list = list.filter((p) => String(p.category_id) === String(formCategoryFilter.value))
+  }
+  return list.map((p) => ({ title: `${p.name} (${p.category?.name ?? ''})`, value: p.id }))
+})
 
 const headers = [
   { title: '# Orden', key: 'order_number' },
@@ -121,15 +171,28 @@ const statusLabel = (s: PurchaseOrderStatus) =>
   ({ pending: 'Pendiente', received: 'Recibida', cancelled: 'Cancelada' })[s] || s
 
 const statusColor = (s: PurchaseOrderStatus) =>
-  ({ pending: 'warning', received: 'success', cancelled: 'error' })[s] || 'grey'
+  ({ pending: 'orange', received: 'green', cancelled: 'red' })[s] || 'grey'
+
+const statusIcon = (s: PurchaseOrderStatus) =>
+  ({ pending: 'mdi-clock-outline', received: 'mdi-check-circle', cancelled: 'mdi-close-circle' })[s] || 'mdi-help'
+
+function onProductSelected(item: { product_id: number | string; unit_cost: number }) {
+  const prod = products.value.find((p) => String(p.id) === String(item.product_id))
+  if (prod) {
+    item.unit_cost = prod.purchase_price ?? 0
+  }
+}
 
 async function openCreateForm() {
-  const [sups, prods] = await Promise.all([
+  const [sups, prods, cats] = await Promise.all([
     purchaseService.fetchSuppliers(),
     purchaseService.fetchProducts(),
+    purchaseService.fetchCategories(),
   ])
   suppliers.value = sups
   products.value = prods
+  categories.value = cats
+  formCategoryFilter.value = ''
   form.value = { supplier_id: '', items: [{ product_id: '', quantity: 1, unit_cost: 0 }] }
   showForm.value = true
 }
@@ -143,6 +206,10 @@ function removeItem(i: number) {
 }
 
 async function saveOrder() {
+  if (!form.value.items.length || form.value.items.every(i => !i.product_id)) {
+    notifyError('Validación', 'Debe agregar al menos un item')
+    return
+  }
   try {
     await purchaseService.createPurchaseOrder(form.value)
     notifySuccess('Orden creada')
@@ -154,7 +221,12 @@ async function saveOrder() {
 }
 
 async function loadOrders() {
-  orders.value = await purchaseService.fetchPurchaseOrders()
+  loading.value = true
+  try {
+    orders.value = await purchaseService.fetchPurchaseOrders()
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => loadOrders())

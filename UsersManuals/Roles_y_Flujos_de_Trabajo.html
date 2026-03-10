@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bar Demo - Roles y Flujos de Trabajo</title>
+  <style>
+    @page { margin: 1.5cm; size: letter; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; line-height: 1.5; padding: 40px; max-width: 900px; margin: 0 auto; }
+    h1 { color: #4A148C; font-size: 26px; border-bottom: 3px solid #4A148C; padding-bottom: 8px; margin-bottom: 24px; }
+    h2 { color: #4A148C; font-size: 20px; margin-top: 32px; margin-bottom: 12px; border-left: 4px solid #4A148C; padding-left: 12px; }
+    h3 { color: #333; font-size: 16px; margin-top: 20px; margin-bottom: 8px; }
+    p { margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px 0; font-size: 13px; }
+    th { background: #4A148C; color: white; padding: 8px 12px; text-align: left; font-weight: 600; }
+    td { padding: 7px 12px; border-bottom: 1px solid #ddd; }
+    tr:nth-child(even) td { background: #f9f7fc; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; }
+    .badge-admin { background: #4A148C; }
+    .badge-cajero { background: #2E7D32; }
+    .badge-user { background: #757575; }
+    .check { color: #2E7D32; font-weight: bold; }
+    .cross { color: #C62828; font-weight: bold; }
+    ol { margin: 8px 0 16px 24px; }
+    ol li { margin-bottom: 4px; }
+    .flow-box { background: #f5f0ff; border: 1px solid #d1c4e9; border-radius: 8px; padding: 16px 20px; margin: 12px 0 20px 0; }
+    .flow-box ol { margin-bottom: 0; }
+    .section-divider { border: none; border-top: 2px dashed #ccc; margin: 30px 0; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .date { color: #666; font-size: 13px; }
+    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 11px; color: #888; text-align: center; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+      h2 { page-break-after: avoid; }
+      .flow-box { page-break-inside: avoid; }
+      table { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-bar">
+  <h1>Roles y Flujos de Trabajo</h1>
+  <span class="date">Bar Demo &mdash; Febrero 2026</span>
+</div>
+
+<p style="margin-bottom:20px">
+  Este documento describe los tres perfiles de usuario del sistema, sus permisos, y el flujo de trabajo diario de cada uno en el contexto de un bar/restaurante.
+</p>
+
+<!-- ========== PERFILES ========== -->
+<h2>1. Perfiles de Usuario</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:140px">Rol</th>
+      <th>Descripcion</th>
+      <th style="width:280px">Acceso principal</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge badge-admin">Admin</span></td>
+      <td>Dueno / Gerente del negocio</td>
+      <td>Todo: usuarios, caja, POS, inventario, compras, facturas, reportes, configuracion</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cajero">Cajero</span></td>
+      <td>Operador de caja / POS</td>
+      <td>Abrir/cerrar caja (con contrasena), operar POS, crear facturas, ver productos</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-user">User</span></td>
+      <td>Empleado basico (mesero)</td>
+      <td>Ver dashboard, ver productos. No puede abrir caja ni operar POS</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Contexto de negocio</h3>
+<table>
+  <thead>
+    <tr><th>Escenario</th><th>Personal</th><th>Descripcion</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Lunes - Martes</strong> (dias tranquilos)</td>
+      <td>1 Admin solo</td>
+      <td>El admin abre caja, opera POS solo, cierra caja al final del dia</td>
+    </tr>
+    <tr>
+      <td><strong>Jueves - Sabado</strong> (dias pico)</td>
+      <td>1 Admin + 2-3 Cajeros</td>
+      <td>Admin abre caja para cada cajero, multiples cajeros operan POS, admin supervisa</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ========== PERMISOS ========== -->
+<h2>2. Permisos por Modulo</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Modulo</th>
+      <th style="width:80px;text-align:center"><span class="badge badge-admin">Admin</span></th>
+      <th style="width:80px;text-align:center"><span class="badge badge-cajero">Cajero</span></th>
+      <th style="width:80px;text-align:center"><span class="badge badge-user">User</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Dashboard</td><td class="check" style="text-align:center">Si</td><td class="check" style="text-align:center">Si</td><td class="check" style="text-align:center">Si</td></tr>
+    <tr><td>POS (Punto de Venta)</td><td class="check" style="text-align:center">Si *</td><td class="check" style="text-align:center">Si **</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Categorias</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Proveedores</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Clientes</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Productos</td><td class="check" style="text-align:center">Si</td><td class="check" style="text-align:center">Si (ver)</td><td class="check" style="text-align:center">Si (ver)</td></tr>
+    <tr><td>Movimientos de Inventario</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Caja Registradora</td><td class="check" style="text-align:center">Si</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Ordenes de Compra</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Facturas</td><td class="check" style="text-align:center">Si</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Reporte Diario</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Gestion de Usuarios</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+    <tr><td>Configuracion</td><td class="check" style="text-align:center">Si</td><td class="cross" style="text-align:center">No</td><td class="cross" style="text-align:center">No</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:12px; color:#555">
+  * Admin: crea ordenes sin pedir contrasena adicional.<br>
+  ** Cajero: debe verificar su contrasena al crear ordenes y al abrir caja.
+</p>
+
+<hr class="section-divider">
+
+<!-- ========== SEGURIDAD ========== -->
+<h2>3. Seguridad y Verificacion de Identidad</h2>
+
+<table>
+  <thead>
+    <tr><th>Accion</th><th>Admin</th><th>Cajero</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Abrir caja</td><td>Pide contrasena</td><td>Pide contrasena</td></tr>
+    <tr><td>Crear orden en POS</td><td>Sin verificacion</td><td>Pide contrasena</td></tr>
+    <tr><td>Intentos fallidos</td><td colspan="2">Maximo 3 intentos &rarr; cierre de sesion automatico</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ========== FLUJO ADMIN ========== -->
+<h2>4. Flujo de Trabajo: <span class="badge badge-admin">Admin</span></h2>
+
+<h3>Dia tranquilo (lunes-martes, opera solo)</h3>
+<div class="flow-box">
+  <ol>
+    <li><strong>Login</strong> &rarr; Ingresar al sistema</li>
+    <li><strong>Dashboard</strong> &rarr; Revisar estadisticas del dia anterior</li>
+    <li><strong>Caja Registradora</strong> &rarr; Abrir caja (verificar contrasena + ingresar monto inicial)</li>
+    <li><strong>POS</strong> &rarr; Crear ordenes, agregar productos, cobrar ventas</li>
+    <li><strong>Inventario / Movimientos</strong> &rarr; Revisar stock bajo, hacer ajustes manuales</li>
+    <li><strong>Ordenes de Compra</strong> &rarr; Crear OC a proveedores si falta stock, recibir mercancia con checklist</li>
+    <li><strong>Facturas</strong> &rarr; Crear facturas manuales si el cliente las solicita</li>
+    <li><strong>Reportes</strong> &rarr; Ver reporte diario al cierre</li>
+    <li><strong>Caja Registradora</strong> &rarr; Cerrar caja (conteo fisico, verificar diferencia)</li>
+  </ol>
+</div>
+
+<h3>Dia pico (jueves-sabado, con equipo)</h3>
+<div class="flow-box">
+  <ol>
+    <li><strong>Login</strong> &rarr; Ingresar al sistema</li>
+    <li><strong>Usuarios</strong> &rarr; Verificar que los cajeros existen en el sistema</li>
+    <li><strong>Caja Registradora</strong> &rarr; Abrir caja para cada cajero que va a operar</li>
+    <li><strong>Supervision</strong> &rarr; Monitorear dashboard y reportes en tiempo real</li>
+    <li><strong>Inventario</strong> &rarr; Monitorear stock, hacer ajustes si es necesario</li>
+    <li><strong>Ordenes de Compra</strong> &rarr; Recibir mercancia con checklist de verificacion</li>
+    <li><strong>Cierre</strong> &rarr; Supervisar cierre de caja de cada cajero</li>
+    <li><strong>Reportes</strong> &rarr; Reporte diario consolidado</li>
+  </ol>
+</div>
+
+<hr class="section-divider">
+
+<!-- ========== FLUJO CAJERO ========== -->
+<h2>5. Flujo de Trabajo: <span class="badge badge-cajero">Cajero</span></h2>
+
+<div class="flow-box">
+  <ol>
+    <li><strong>Login</strong> &rarr; Ingresar con sus credenciales</li>
+    <li><strong>Caja Registradora</strong> &rarr; Abrir caja (ingresa contrasena + monto inicial)</li>
+    <li><strong>POS</strong> &rarr; Crear orden (verifica contrasena la primera vez)</li>
+    <li><strong>POS</strong> &rarr; Agregar productos al carrito haciendo clic en las tarjetas</li>
+    <li><strong>POS</strong> &rarr; Cobrar venta: seleccionar metodo de pago (efectivo / tarjeta / transferencia / QR)</li>
+    <li><strong>POS</strong> &rarr; Manejar multiples ordenes en tabs si hay varias mesas</li>
+    <li><strong>POS</strong> &rarr; Cancelar orden si el cliente lo solicita (devuelve stock)</li>
+    <li><strong>Facturas</strong> &rarr; Crear factura manual si el cliente la solicita</li>
+    <li><strong>Caja Registradora</strong> &rarr; Cerrar caja al final del turno (conteo fisico, ver diferencia)</li>
+  </ol>
+</div>
+
+<h3>Menu visible para Cajero</h3>
+<table>
+  <thead><tr><th>Seccion</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr><td>General</td><td>Dashboard, Punto de Venta</td></tr>
+    <tr><td>Inventario</td><td>Productos (solo consulta)</td></tr>
+    <tr><td>Operaciones</td><td>Caja Registradora, Facturas</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ========== FLUJO USER ========== -->
+<h2>6. Flujo de Trabajo: <span class="badge badge-user">User</span> (Mesero)</h2>
+
+<div class="flow-box">
+  <ol>
+    <li><strong>Login</strong> &rarr; Ingresar con sus credenciales</li>
+    <li><strong>Dashboard</strong> &rarr; Ver resumen del dia</li>
+    <li><strong>Productos</strong> &rarr; Consultar precios y stock disponible</li>
+    <li><em>No puede operar caja ni POS</em></li>
+  </ol>
+</div>
+
+<h3>Menu visible para User</h3>
+<table>
+  <thead><tr><th>Seccion</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr><td>General</td><td>Dashboard</td></tr>
+    <tr><td>Inventario</td><td>Productos (solo consulta)</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ========== NOTAS ========== -->
+<h2>7. Notas Importantes</h2>
+
+<table>
+  <thead><tr><th>Tema</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td>Creacion de usuarios</td><td>Solo el Admin puede crear usuarios desde <strong>Admin &rarr; Usuarios</strong>. Al crear, se asigna nombre, email, contrasena y rol.</td></tr>
+    <tr><td>Contrasena en caja</td><td>Tanto Admin como Cajero deben verificar su contrasena al abrir caja. Esto previene que alguien abra caja sin autorizacion.</td></tr>
+    <tr><td>Bloqueo por intentos</td><td>Despues de 3 intentos fallidos de contrasena (en caja, POS o facturas), el sistema cierra la sesion automaticamente.</td></tr>
+    <tr><td>Inactividad</td><td>El sistema cierra sesion automaticamente despues de 60 segundos de inactividad (con advertencia a los 50 segundos).</td></tr>
+    <tr><td>POS requiere caja abierta</td><td>No se puede cobrar una orden si no hay una caja abierta. El sistema muestra un aviso y boton para ir a abrir caja.</td></tr>
+    <tr><td>Cancelar orden</td><td>Al cancelar una orden en POS, el stock se devuelve automaticamente al inventario.</td></tr>
+    <tr><td>Recepcion de compras</td><td>Al recibir una orden de compra, se usa un checklist por producto: cantidad recibida, cantidad devuelta y motivo de devolucion.</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  Bar Demo &mdash; Sistema de Gestion &mdash; Documento generado Febrero 2026<br>
+  Para convertir a PDF: Abrir en navegador &rarr; Ctrl+P (o Cmd+P) &rarr; Guardar como PDF
+</div>
+
+<div class="no-print" style="margin-top:30px; text-align:center; padding:16px; background:#e8f5e9; border-radius:8px">
+  <strong>Para guardar como PDF:</strong> Presiona <code>Ctrl+P</code> (Windows) o <code>Cmd+P</code> (Mac) y selecciona "Guardar como PDF"
+</div>
+
+</body>
+</html>

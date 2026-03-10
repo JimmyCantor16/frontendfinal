@@ -24,6 +24,6 @@ export async function closeOrder(orderId: number, payload: CloseOrderPayload): P
   await api.post(`/orders/${orderId}/close`, payload)
 }
 
-export async function cancelOrder(orderId: number): Promise<void> {
-  await api.post(`/orders/${orderId}/cancel`)
+export async function cancelOrder(orderId: number, reason?: string): Promise<void> {
+  await api.post(`/orders/${orderId}/cancel`, reason ? { cancel_reason: reason } : undefined)
 }

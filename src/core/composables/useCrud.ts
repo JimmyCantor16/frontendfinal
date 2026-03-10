@@ -1,6 +1,7 @@
 import { ref, computed, type Ref } from 'vue'
 import api from '@core/api/client'
 import { notifySuccess, notifyApiError, confirmAction } from '@core/utils/notify'
+import { useDebouncedRef } from '@core/utils/debounce'
 
 interface UseCrudOptions<T, F> {
   endpoint: string
@@ -16,9 +17,12 @@ export function useCrud<T extends { id: number }, F>(options: UseCrudOptions<T, 
   const editingId: Ref<number | null> = ref(null)
   const form: Ref<F> = ref(options.defaultForm()) as Ref<F>
   const loading = ref(false)
+  const saving = ref(false)
+
+  const debouncedSearch = useDebouncedRef(search, 300)
 
   const filtered = computed(() => {
-    const q = search.value.toLowerCase()
+    const q = debouncedSearch.value.toLowerCase()
     if (!q || !options.searchFilter) return items.value
     return items.value.filter((item) => options.searchFilter!(item, q))
   })
@@ -27,7 +31,8 @@ export function useCrud<T extends { id: number }, F>(options: UseCrudOptions<T, 
     loading.value = true
     try {
       const { data } = await api.get(options.endpoint)
-      items.value = data.data ?? data
+      const raw = data.data ?? data
+      items.value = Array.isArray(raw) ? raw : []
     } catch (err) {
       notifyApiError(err, `Error al cargar ${options.entityName.toLowerCase()}s`)
     } finally {
@@ -48,6 +53,8 @@ export function useCrud<T extends { id: number }, F>(options: UseCrudOptions<T, 
   }
 
   async function save(): Promise<void> {
+    if (saving.value) return
+    saving.value = true
     try {
       if (editingId.value) {
         await api.put(`${options.endpoint}/${editingId.value}`, form.value as Record<string, unknown>)
@@ -60,6 +67,8 @@ export function useCrud<T extends { id: number }, F>(options: UseCrudOptions<T, 
       await fetchData()
     } catch (err) {
       notifyApiError(err, `Error al guardar ${options.entityName.toLowerCase()}`)
+    } finally {
+      saving.value = false
     }
   }
 
@@ -87,6 +96,7 @@ export function useCrud<T extends { id: number }, F>(options: UseCrudOptions<T, 
     editingId,
     form,
     loading,
+    saving,
     filtered,
     fetchData,
     openForm,

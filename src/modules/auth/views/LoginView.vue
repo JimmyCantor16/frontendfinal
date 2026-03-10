@@ -80,7 +80,12 @@ const onSubmit = async () => {
   errorMessage.value = ''
 
   try {
-    const recaptchaToken = await getRecaptchaToken()
+    let recaptchaToken = ''
+    try {
+      recaptchaToken = await getRecaptchaToken()
+    } catch {
+      console.warn('reCAPTCHA no disponible, continuando sin token')
+    }
 
     await auth.login({
       email: email.value,
@@ -91,7 +96,7 @@ const onSubmit = async () => {
     notifySuccess('¡Bienvenido!')
     router.push('/dashboard')
   } catch (err: unknown) {
-    const e = err as any
+    const e = err as { response?: { data?: { message?: string } }; message?: string }
     errorMessage.value =
       e.response?.data?.message || e.message || 'Error de login'
   } finally {

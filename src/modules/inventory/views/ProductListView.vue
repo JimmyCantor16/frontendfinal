@@ -2,10 +2,27 @@
   <v-container>
     <div class="d-flex align-center justify-space-between mb-6">
       <h2 class="text-h5 text-primary">Productos</h2>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openForm">
+      <v-btn v-if="isAdmin" color="primary" prepend-icon="mdi-plus" @click="openForm">
         Nuevo Producto
       </v-btn>
     </div>
+
+    <!-- Stock alert for cajero -->
+    <v-card v-if="!isAdmin && lowStockProducts.length" class="mb-4 pa-4" variant="outlined" color="warning">
+      <div class="d-flex align-center mb-2">
+        <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+        <span class="text-subtitle-1 font-weight-bold">Productos con stock bajo — Informar al administrador</span>
+      </div>
+      <v-list density="compact" class="bg-transparent">
+        <v-list-item v-for="p in lowStockProducts" :key="p.id" class="px-0">
+          <template #prepend>
+            <v-chip :color="p.stock === 0 ? 'error' : 'warning'" size="small" class="mr-2">{{ p.stock }}</v-chip>
+          </template>
+          <v-list-item-title>{{ p.name }} ({{ p.sku }})</v-list-item-title>
+          <v-list-item-subtitle>Stock mín: {{ p.minimum_stock }}</v-list-item-subtitle>
+        </v-list-item>
+      </v-list>
+    </v-card>
 
     <v-row class="mb-4" align="center">
       <v-col cols="12" sm="4">
@@ -49,10 +66,10 @@
           />
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model.number="form.purchase_price" label="Precio Compra" type="number" min="0" step="0.01" />
+              <v-text-field v-model.number="form.purchase_price" label="Precio Compra" type="number" min="0" step="0.01" :rules="[v => v >= 0 || 'Debe ser >= 0']" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model.number="form.sale_price" label="Precio Venta" type="number" min="0" step="0.01" />
+              <v-text-field v-model.number="form.sale_price" label="Precio Venta" type="number" min="0" step="0.01" :rules="[v => v > 0 || 'Debe ser mayor a 0']" />
             </v-col>
           </v-row>
           <v-row>
@@ -60,7 +77,7 @@
               <v-text-field v-model.number="form.stock" label="Stock" type="number" min="0" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model.number="form.minimum_stock" label="Stock Mínimo" type="number" min="0" />
+              <v-text-field v-model.number="form.minimum_stock" label="Stock Mínimo" type="number" min="1" :rules="[r => r >= 1 || 'Stock mínimo requerido (mín. 1)']" />
             </v-col>
           </v-row>
           <v-checkbox v-model="form.is_active" label="Activo" hide-details />
@@ -78,22 +95,26 @@
         :headers="headers"
         :items="tableItems"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No se encontraron productos."
       >
         <template #item.purchase_price="{ item }">{{ formatCOP(item.purchase_price) }}</template>
         <template #item.sale_price="{ item }">{{ formatCOP(item.sale_price) }}</template>
         <template #item.category="{ item }">{{ item.category?.name }}</template>
         <template #item.stock="{ item }">
-          <span :class="{ 'text-error font-weight-bold': item.stock <= item.minimum_stock }">
+          <span :class="{ 'text-error font-weight-bold': item.stock <= (item.minimum_stock ?? 0) }">
             {{ item.stock }}
           </span>
+        </template>
+        <template #item.minimum_stock="{ item }">
+          {{ item.minimum_stock ?? 0 }}
         </template>
         <template #item.is_active="{ item }">
           <v-chip :color="item.is_active ? 'success' : 'grey'" size="small">
             {{ item.is_active ? 'Sí' : 'No' }}
           </v-chip>
         </template>
-        <template #item.actions="{ item }">
+        <template v-if="isAdmin" #item.actions="{ item }">
           <v-btn icon size="small" variant="text" color="warning" @click="onEdit(item)">
             <v-icon>mdi-pencil</v-icon>
           </v-btn>
@@ -110,20 +131,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCrud } from '@core/composables/useCrud'
 import { formatCOP } from '@core/utils/format'
+import { filterLowStockProducts } from '@core/utils/product'
 import { useInventoryStore } from '../store/inventory.store'
+import { useAuthStore } from '@modules/auth/store/auth.store'
 import type { Product } from '@core/types/models'
 import type { ProductForm } from '../types/inventory.types'
 
 const inventoryStore = useInventoryStore()
+const authStore = useAuthStore()
+const userRole = computed(() => (authStore.user?.role ?? '').toLowerCase())
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const filterCategory = ref<number | string>('')
 const filterLowStock = ref(false)
 
-const categoryOptions = computed(() =>
-  inventoryStore.categories.map((c) => ({ title: c.name, value: c.id }))
-)
+const categoryOptions = computed(() => [
+  { title: 'Todos', value: '' },
+  ...inventoryStore.categories.map((c) => ({ title: c.name, value: c.id })),
+])
 
-const headers = [
+const baseHeaders = [
   { title: 'SKU', key: 'sku' },
   { title: 'Nombre', key: 'name' },
   { title: 'Categoría', key: 'category' },
@@ -132,11 +159,18 @@ const headers = [
   { title: 'Stock', key: 'stock' },
   { title: 'Stock Mín.', key: 'minimum_stock' },
   { title: 'Activo', key: 'is_active', width: 80 },
-  { title: 'Acciones', key: 'actions', sortable: false, width: 120 },
 ]
 
+const headers = computed(() =>
+  isAdmin.value
+    ? [...baseHeaders, { title: 'Acciones', key: 'actions', sortable: false, width: 120 }]
+    : baseHeaders
+)
+
+const lowStockProducts = computed(() => filterLowStockProducts(filtered.value as Product[]))
+
 const {
-  search, showForm, editingId, form, filtered,
+  search, showForm, editingId, form, filtered, loading,
   fetchData, openForm, editItem, save, remove,
 } = useCrud<Product, ProductForm>({
   endpoint: '/products',
@@ -151,8 +185,11 @@ const {
 
 const tableItems = computed(() => {
   let list = filtered.value
-  if (filterCategory.value) list = list.filter((p) => String(p.category_id) === String(filterCategory.value))
-  if (filterLowStock.value) list = list.filter((p) => p.stock <= p.minimum_stock)
+  if (filterCategory.value) list = list.filter((p) => String(p.category_id || '') === String(filterCategory.value))
+  if (filterLowStock.value) list = list.filter((p) => {
+    const minStock = Number(p.minimum_stock) || 0
+    return p.stock === 0 || (minStock > 0 && p.stock <= minStock)
+  })
   return list
 })
 

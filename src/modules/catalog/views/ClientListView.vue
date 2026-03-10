@@ -30,11 +30,11 @@
             :rules="[r => !!r || 'Requerido']"
             class="mb-2"
           />
-          <v-text-field v-model="form.document_number" label="Número de Documento" :rules="[r => !!r || 'Requerido']" class="mb-2" />
+          <v-text-field v-model="form.document_number" label="Número de Documento" :rules="[r => !!r || 'Requerido', r => /^\d{4,15}$/.test(r) || 'Debe ser entre 4 y 15 dígitos']" class="mb-2" />
           <v-text-field v-model="form.name" label="Nombre" :rules="[r => !!r || 'Requerido']" class="mb-2" />
           <v-text-field v-model="form.phone" label="Teléfono" class="mb-2" />
-          <v-text-field v-model="form.email" label="Email" type="email" class="mb-2" />
-          <v-text-field v-model="form.address" label="Dirección" class="mb-2" />
+          <v-text-field v-model="form.email" label="Email" type="email" :rules="[v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Email no válido']" class="mb-2" />
+          <v-text-field v-model="form.address" label="Dirección (opcional)" hint="Solo si el cliente lo proporciona" persistent-hint class="mb-2" />
           <v-card-actions class="px-0">
             <v-spacer />
             <v-btn variant="text" @click="showForm = false">Cancelar</v-btn>
@@ -49,6 +49,7 @@
         :headers="headers"
         :items="filtered"
         :items-per-page="10"
+        :loading="loading"
         no-data-text="No se encontraron clientes."
       >
         <template #item.actions="{ item }">
@@ -83,14 +84,14 @@ const headers = [
 ]
 
 const {
-  search, showForm, editingId, form, filtered,
+  search, showForm, editingId, form, filtered, loading,
   fetchData, openForm, editItem, save, remove,
 } = useCrud<Client, ClientForm>({
   endpoint: '/clients',
   entityName: 'Cliente',
   defaultForm: () => ({ document_type: '', document_number: '', name: '', phone: '', email: '', address: '' }),
   searchFilter: (item, q) =>
-    item.name.toLowerCase().includes(q) || (item.document_number?.toLowerCase().includes(q) ?? false),
+    item.name.toLowerCase().includes(q) || String(item.document_number || '').toLowerCase().includes(q),
 })
 
 function onEdit(c: Client) {

@@ -3,7 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
-    role?: string
+    role?: string | string[]
     layout?: 'default' | 'auth'
     fullscreen?: boolean
   }
@@ -34,7 +34,13 @@ const routes: RouteRecordRaw[] = [
   ...cashRegisterRoutes,
   ...reportsRoutes,
   ...settingsRoutes,
-  { path: '/:pathMatch(.*)*', redirect: '/login' },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: () => {
+      const token = localStorage.getItem('token')
+      return token ? '/dashboard' : '/login'
+    },
+  },
 ]
 
 const router = createRouter({

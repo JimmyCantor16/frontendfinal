@@ -20,15 +20,47 @@ export interface Business {
   updated_at?: string
 }
 
+export type UserRole = 'admin' | 'cajero' | 'user'
+
+export interface RoleRecord {
+  id: number
+  name: string
+}
+
 export interface User {
   id: number
   name: string
   email: string
-  role: 'admin' | 'user'
+  role: UserRole
+  roles?: RoleRecord[]
   business_id?: number
   business?: Business
   created_at?: string
   updated_at?: string
+}
+
+/**
+ * Normaliza el rol de un usuario.
+ * Soporta tanto `user.role` (string directo) como `user.roles` (relación pivot).
+ */
+export function normalizeUserRole(user: Record<string, unknown>): UserRole {
+  if (typeof user.role === 'string' && user.role) {
+    return user.role as UserRole
+  }
+  if (Array.isArray(user.roles) && user.roles.length > 0) {
+    const first = user.roles[0]
+    if (typeof first === 'string') return first as UserRole
+    if (first && typeof first.name === 'string') return first.name as UserRole
+  }
+  return 'user'
+}
+
+/**
+ * Normaliza un objeto user del API asegurando que `role` sea un string.
+ */
+export function normalizeUser(raw: Record<string, unknown>): User {
+  const role = normalizeUserRole(raw)
+  return { ...raw, role } as User
 }
 
 export interface Category {
@@ -115,6 +147,9 @@ export interface PurchaseOrderItem {
   quantity: number
   unit_cost: number
   subtotal?: number
+  received_quantity?: number
+  returned_quantity?: number
+  return_reason?: string
 }
 
 export type PurchaseOrderStatus = 'pending' | 'received' | 'cancelled'
@@ -124,11 +159,17 @@ export interface PurchaseOrder {
   order_number?: string
   supplier_id: number
   supplier?: Supplier
+  user?: User
   status: PurchaseOrderStatus
   subtotal: number
   tax: number
   total: number
   items: PurchaseOrderItem[]
+  cancel_reason?: string
+  received_by_name?: string
+  cancelled_by_name?: string
+  received_at?: string
+  cancelled_at?: string
   created_at?: string
   updated_at?: string
 }

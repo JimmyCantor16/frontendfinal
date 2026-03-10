@@ -13,7 +13,7 @@
               v-model="form.name"
               label="Nombre del Negocio"
               prepend-inner-icon="mdi-store"
-              :rules="[r => !!r || 'Requerido']"
+              :rules="[r => !!r?.trim() || 'Requerido']"
               class="mb-2"
             />
             <v-text-field
@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 import { notifySuccess, notifyApiError } from '@core/utils/notify'
 import * as settingsService from '../services/settings.service'
@@ -211,6 +211,9 @@ function onLogoSelected(files: File[] | null) {
   const file = files[0]
   if (file.size > 2_000_000) return
 
+  if (logoPreview.value) {
+    URL.revokeObjectURL(logoPreview.value)
+  }
   logoPreview.value = URL.createObjectURL(file)
   pendingLogoFile.value = file
 }
@@ -261,4 +264,11 @@ async function onSave() {
 }
 
 onMounted(() => loadSettings())
+
+onUnmounted(() => {
+  if (logoPreview.value) {
+    URL.revokeObjectURL(logoPreview.value)
+    logoPreview.value = null
+  }
+})
 </script>

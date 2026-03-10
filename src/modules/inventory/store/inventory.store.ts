@@ -28,7 +28,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function loadAll(): Promise<void> {
-    await Promise.all([loadProducts(), loadCategories()])
+    await Promise.allSettled([loadProducts(), loadCategories()])
   }
 
   return { products, categories, loadProducts, loadCategories, loadAll }

@@ -43,9 +43,17 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
-  function logout() {
+  async function logout() {
     clearInactivityControl()
-    localStorage.clear()
+    try {
+      const api = (await import('@core/api/client')).default
+      await api.post('/logout')
+    } catch {
+      // Logout del backend falló — continuar limpieza local
+    }
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('business')
     user.value = null
     token.value = null
     business.value = null
@@ -68,6 +76,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function validateToken(): Promise<boolean> {
+    if (!token.value) return false
+    try {
+      await fetchUser()
+      return true
+    } catch {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('business')
+      user.value = null
+      token.value = null
+      business.value = null
+      return false
+    }
+  }
+
   return {
     user,
     token,
@@ -80,5 +104,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchUser,
     restoreInactivity,
+    validateToken,
   }
 })

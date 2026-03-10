@@ -11,7 +11,7 @@ const routes: RouteRecordRaw[] = [
     path: '/invoices/:id',
     name: 'invoice-detail',
     component: () => import('./views/InvoiceDetailView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, role: 'admin' },
   },
 ]
 

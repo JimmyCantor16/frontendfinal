@@ -6,14 +6,14 @@
     hover
     @click="$emit('add', product)"
   >
-    <v-card-text class="text-center pa-4">
-      <v-icon size="40" color="primary" class="mb-2">mdi-glass-cocktail</v-icon>
-      <div class="text-subtitle-2 font-weight-bold text-truncate">{{ product.name }}</div>
-      <div class="text-h6 text-primary mt-1">{{ formatCOP(product.sale_price) }}</div>
+    <v-card-text class="text-center pa-5">
+      <v-icon size="48" color="primary" class="mb-3">mdi-package-variant-closed</v-icon>
+      <div class="text-subtitle-1 font-weight-bold" style="white-space: normal; word-break: break-word; line-height: 1.3">{{ product.name }}</div>
+      <div class="text-h6 text-primary mt-2">{{ formatCOP(product.sale_price) }}</div>
       <v-chip
         :color="product.stock > 0 ? 'success' : 'error'"
-        size="x-small"
-        class="mt-1"
+        size="small"
+        class="mt-2"
       >
         Stock: {{ product.stock }}
       </v-chip>
@@ -38,7 +38,7 @@ defineEmits<{
 .pos-product-card {
   cursor: pointer;
   transition: transform 0.15s;
-  min-width: 140px;
+  min-width: 180px;
 }
 .pos-product-card:hover:not(.v-card--disabled) {
   transform: translateY(-2px);
