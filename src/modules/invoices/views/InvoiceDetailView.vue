@@ -54,8 +54,16 @@
         <template #item.subtotal="{ item }">{{ formatCOP(item.subtotal ?? item.quantity * item.unit_price) }}</template>
       </v-data-table>
 
-      <div v-if="invoice.status === 'completed' && isAdmin" class="mt-6">
-        <v-btn color="error" @click="onCancel">Cancelar Factura</v-btn>
+      <div class="mt-6 d-flex flex-wrap" style="gap: 8px;">
+        <v-btn color="primary" variant="tonal" prepend-icon="mdi-printer" @click="onPrint">
+          Imprimir
+        </v-btn>
+        <v-btn color="secondary" variant="tonal" prepend-icon="mdi-file-document" @click="onDownloadPdf">
+          Descargar PDF
+        </v-btn>
+        <v-btn v-if="invoice.status === 'completed' && isAdmin" color="error" variant="outlined" @click="onCancel">
+          Cancelar Factura
+        </v-btn>
       </div>
     </v-card>
   </v-container>
@@ -129,6 +137,37 @@ async function onCancel() {
   } catch (err) {
     notifyApiError(err, 'Error al cancelar')
   }
+}
+
+function onPrint(): void {
+  if (!invoice.value) return
+  window.open(`/invoices/${invoice.value.id}/print`, '_blank')
+}
+
+function onDownloadPdf(): void {
+  if (!invoice.value) return
+  const baseURL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
+  const token = localStorage.getItem('token')
+  // Abrimos en nueva pestaña con el token como query param NO funciona con Sanctum;
+  // necesitamos fetch + blob para conservar el header Authorization.
+  fetch(`${baseURL}/invoices/${invoice.value.id}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.blob()
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `FAC-${invoice.value!.invoice_number ?? invoice.value!.id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    })
+    .catch((err) => notifyApiError(err, 'No se pudo descargar el PDF'))
 }
 
 onMounted(() => loadInvoice())

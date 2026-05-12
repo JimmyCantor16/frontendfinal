@@ -165,10 +165,12 @@ import { useInventoryStore } from '@modules/inventory/store/inventory.store'
 import { useCashRegisterStore } from '@modules/cash-register/store/cash-register.store'
 import { useAuthStore } from '@modules/auth/store/auth.store'
 import { useAuthGate } from '@core/composables/useAuthGate'
-import { notifyApiError, notifyError } from '@core/utils/notify'
+import { notifyApiError, notifyError, notifySuccess } from '@core/utils/notify'
 import { formatCOP } from '@core/utils/format'
 import type { Product, PaymentMethod, Order, Category, CashRegister } from '@core/types/models'
 import api from '@core/api/client'
+import { useBarcodeScanner } from '@core/composables/useBarcodeScanner'
+import { fetchProductByBarcode } from '@modules/inventory/services/product.service'
 import PosOrderTabs from '../components/PosOrderTabs.vue'
 import PosCategoryTabs from '../components/PosCategoryTabs.vue'
 import PosProductCard from '../components/PosProductCard.vue'
@@ -285,7 +287,41 @@ onMounted(async () => {
   }
 })
 
+// === Scanner de códigos de barras ===
+// Listener global: scanner tipo USB-keyboard tipea rápido + Enter.
+// El composable filtra automáticamente cuando el user está en un input.
+async function onBarcodeScanned(code: string): Promise<void> {
+  if (!posStore.cashRegisterOpen) {
+    notifyError('Sin Caja', 'Debes abrir una caja antes de escanear productos.')
+    return
+  }
+  try {
+    const product = await fetchProductByBarcode(code)
+    if (!product) {
+      notifyError('No encontrado', `Código "${code}" no corresponde a ningún producto.`)
+      return
+    }
+    // Si no hay orden activa, creamos una primero
+    if (!posStore.activeOrderId) {
+      await posStore.createOrder()
+    }
+    await posStore.addProduct(product)
+    notifySuccess(`${product.name} agregado`)
+  } catch (err) {
+    notifyApiError(err, 'Error procesando código escaneado')
+  }
+}
+
+const scanner = useBarcodeScanner({
+  onScan: onBarcodeScanned,
+  minLength: 4,
+  maxIntervalMs: 50,
+})
+
+onMounted(() => scanner.start())
+
 onBeforeUnmount(() => {
+  scanner.stop()
   posStore.clearLastSale()
 })
 </script>
