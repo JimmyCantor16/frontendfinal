@@ -14,8 +14,16 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['tests/unit/**/*.test.ts'],
+    include: [
+      'tests/unit/**/*.test.ts',
+      'src/**/__tests__/**/*.test.ts',
+    ],
     setupFiles: ['tests/setup.ts'],
+    server: {
+      deps: {
+        inline: ['vuetify'],
+      },
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts', 'src/**/*.vue'],

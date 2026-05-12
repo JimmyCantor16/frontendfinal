@@ -144,7 +144,7 @@ import { useAuthStore } from '@modules/auth/store/auth.store'
 import { notifySuccess, notifyApiError } from '@core/utils/notify'
 import * as settingsService from '../services/settings.service'
 
-const API_BASE = process.env.VUE_APP_API_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const authStore = useAuthStore()
 const saving = ref(false)
@@ -202,8 +202,9 @@ const subscriptionStatusLabel = computed(() => {
   return labels[authStore.business?.subscription_status ?? ''] ?? 'N/A'
 })
 
-function onLogoSelected(files: File[] | null) {
-  if (!files?.length) {
+function onLogoSelected(value: File | File[]) {
+  const files = Array.isArray(value) ? value : value ? [value] : []
+  if (!files.length) {
     logoPreview.value = null
     pendingLogoFile.value = null
     return

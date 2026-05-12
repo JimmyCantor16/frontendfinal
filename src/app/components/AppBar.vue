@@ -1,6 +1,8 @@
 <template>
   <v-app-bar color="primary" density="comfortable" elevation="2">
-    <v-app-bar-nav-icon @click="$emit('toggle-drawer')" />
+    <!-- En rutas fullscreen (POS) no hay sidebar, así que ocultamos el botón ☰
+         para que no parezca "pegado" al no producir efecto visible. -->
+    <v-app-bar-nav-icon v-if="!isFullscreen" @click="$emit('toggle-drawer')" />
 
     <!-- Business branding -->
     <v-avatar v-if="authStore.businessLogo" size="32" class="ml-2 mr-2">
@@ -13,6 +15,8 @@
     </v-app-bar-title>
 
     <v-spacer />
+
+    <BusinessSwitcher />
 
     <v-btn
       v-if="isInPos"
@@ -55,6 +59,9 @@
           </v-list-item-subtitle>
         </v-list-item>
         <v-divider />
+        <v-list-item prepend-icon="mdi-credit-card-check" to="/subscription">
+          <v-list-item-title>Mi suscripción</v-list-item-title>
+        </v-list-item>
         <v-list-item prepend-icon="mdi-cog" to="/settings">
           <v-list-item-title>Configuración</v-list-item-title>
         </v-list-item>
@@ -70,10 +77,12 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@modules/auth/store/auth.store'
+import BusinessSwitcher from '@modules/business/components/BusinessSwitcher.vue'
 
 const authStore = useAuthStore()
 const route = useRoute()
 const isInPos = computed(() => route.path === '/pos')
+const isFullscreen = computed(() => route.meta.fullscreen === true)
 
 defineEmits<{
   'toggle-drawer': []
