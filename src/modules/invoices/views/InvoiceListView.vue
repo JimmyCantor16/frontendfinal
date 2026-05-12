@@ -175,6 +175,14 @@
           <v-btn size="small" color="primary" variant="text" :to="`/invoices/${item.id}`">
             Ver
           </v-btn>
+          <v-btn
+            size="small"
+            color="primary"
+            variant="text"
+            icon="mdi-printer"
+            :title="'Imprimir'"
+            @click.stop="openPrint(item.id)"
+          />
         </template>
       </v-data-table>
     </v-card>
@@ -266,6 +274,10 @@ const statusLabel = (s: InvoiceStatus) =>
 function getItemTotal(item: InvoiceItemForm): number {
   const prod = products.value.find((p) => String(p.id) === String(item.product_id))
   return prod ? prod.sale_price * (item.quantity || 0) : 0
+}
+
+function openPrint(invoiceId: number): void {
+  window.open(`/invoices/${invoiceId}/print`, '_blank')
 }
 
 function onProductChange(item: InvoiceItemForm) {
