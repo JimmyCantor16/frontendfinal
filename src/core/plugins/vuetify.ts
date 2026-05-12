@@ -1,13 +1,8 @@
 import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 import { createVuetify } from 'vuetify'
-import { mdiCustomSet, mdiCustomAliases } from './mdi-icons'
 
 export default createVuetify({
-  icons: {
-    defaultSet: 'mdi',
-    aliases: mdiCustomAliases as never,
-    sets: { mdi: mdiCustomSet },
-  },
   theme: {
     defaultTheme: 'light',
     themes: {

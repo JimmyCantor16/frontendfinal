@@ -1,14 +1,18 @@
 /**
  * Custom MDI iconset: solo los íconos efectivamente usados en templates.
  * Cada ícono se importa por nombre desde @mdi/js (tree-shakeable, ~1KB c/u).
- * El custom iconset de Vuetify resuelve dinámicamente `mdi-name` → SVG path.
+ *
+ * Estrategia: reusamos el componente `VSvgIcon` de Vuetify (vía
+ * `vuetify/iconsets/mdi-svg`) y solo le pre-procesamos el `icon` para que,
+ * cuando reciba un string como `'mdi-cart'`, lo resuelva al path SVG de @mdi/js.
  *
  * Para agregar un ícono nuevo:
  *   1. Importarlo aquí desde '@mdi/js'
  *   2. Agregarlo al objeto MDI_ICONS con su nombre kebab-case
  */
-import { h } from 'vue'
-import type { IconSet, IconProps } from 'vuetify'
+import { defineComponent, h } from 'vue'
+import type { IconSet } from 'vuetify'
+import { mdi as mdiSvgIconset, aliases as builtInAliases } from 'vuetify/iconsets/mdi-svg'
 import {
   mdiAccount,
   mdiAccountCircle,
@@ -159,64 +163,62 @@ const MDI_ICONS: Record<string, string> = {
 
 const FALLBACK_PATH = mdiHelp
 
-export const mdiCustomSet: IconSet = {
-  component: (props: IconProps) => {
-    const raw = String(props.icon ?? '')
-    const path = MDI_ICONS[raw] ?? FALLBACK_PATH
-    return h(
-      'svg',
-      {
-        class: 'v-icon__svg',
-        xmlns: 'http://www.w3.org/2000/svg',
-        viewBox: '0 0 24 24',
-        role: 'img',
-        'aria-hidden': 'true',
-      },
-      [h('path', { d: path })]
-    )
+// Vuetify's VSvgIcon — exposed via the built-in mdi-svg iconset
+const VSvgIcon = mdiSvgIconset.component
+
+/**
+ * Wrapper que pre-procesa el `icon` prop antes de delegar a VSvgIcon.
+ * - Si recibe `'mdi-foo'` → busca el path SVG en MDI_ICONS
+ * - Si recibe ya un path SVG (empieza con `M`, `m`, etc.) → lo pasa tal cual
+ *   (este caso ocurre cuando Vuetify resuelve un alias interno como `$expand`)
+ * - Si no encuentra match → renderiza el ícono de ayuda como fallback
+ */
+const MdiCustomIcon = defineComponent({
+  name: 'MdiCustomIcon',
+  inheritAttrs: false,
+  props: {
+    icon: { type: [String, Array], default: '' },
+    tag: { type: [String, Object, Function], required: true },
   },
+  setup(props, { attrs }) {
+    return () => {
+      const raw = props.icon
+      let resolved: string | unknown[] = ''
+
+      if (Array.isArray(raw)) {
+        resolved = raw
+      } else {
+        const str = String(raw ?? '').trim()
+        if (!str) {
+          resolved = FALLBACK_PATH
+        } else if (/^[MmLlHhVvCcSsQqTtAaZz]/.test(str)) {
+          // Ya es un path SVG (caso de aliases resueltos)
+          resolved = str
+        } else {
+          resolved = MDI_ICONS[str] ?? FALLBACK_PATH
+        }
+      }
+
+      return h(VSvgIcon as never, {
+        ...attrs,
+        tag: props.tag,
+        icon: resolved,
+      })
+    }
+  },
+})
+
+export const mdiCustomSet: IconSet = {
+  component: MdiCustomIcon as never,
 }
 
+// Aliases internos que Vuetify usa para sus propios componentes (VTextField clearable,
+// VAlert close, VRating, VCheckbox, etc.). Valores = path SVG.
 export const mdiCustomAliases = {
-  // Aliases que Vuetify usa internamente (close, expand, etc.)
-  complete: mdiCheck,
-  cancel: mdiCloseCircle,
-  close: mdiClose,
-  delete: mdiCloseCircle,
-  clear: mdiCloseCircle,
-  success: mdiCheckCircle,
-  info: mdiAlertCircle,
-  warning: mdiAlert,
-  error: mdiAlertCircle,
-  prev: mdiArrowLeft,
-  next: mdiArrowLeft,
-  checkboxOn: mdiCheck,
-  checkboxOff: mdiClose,
-  checkboxIndeterminate: mdiMenuDown,
-  delimiter: mdiCheck,
-  sortAsc: mdiArrowUpBold,
-  sortDesc: mdiArrowUpBold,
-  expand: mdiMenuDown,
-  menu: mdiMenuDown,
-  subgroup: mdiMenuDown,
-  dropdown: mdiMenuDown,
-  radioOn: mdiCheckCircle,
-  radioOff: mdiCheckCircle,
+  ...builtInAliases,
+  // Sobreescrituras opcionales (pueden quedar como están si los built-in funcionan):
   edit: mdiPencil,
-  ratingEmpty: mdiCheck,
-  ratingFull: mdiCheck,
-  ratingHalf: mdiCheck,
   loading: mdiRefresh,
-  first: mdiArrowLeft,
-  last: mdiArrowLeft,
-  unfold: mdiMenuDown,
   file: mdiFileDocument,
   plus: mdiPlus,
-  minus: mdiClose,
-  calendar: mdiClockOutline,
-  treeviewCollapse: mdiMenuDown,
-  treeviewExpand: mdiMenuDown,
-  eyeDropper: mdiEye,
-  upload: mdiArrowUpBold,
-  color: mdiShape,
 }

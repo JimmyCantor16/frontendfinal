@@ -1,6 +1,11 @@
 let scriptPromise: Promise<void> | null = null
 
+// En dev mode el backend hace bypass de reCAPTCHA (APP_ENV=local),
+// así evitamos cargar el script de Google que cuesta ~700 KB + 1-2 s.
+const SKIP_RECAPTCHA = import.meta.env.DEV
+
 function loadScript(): Promise<void> {
+  if (SKIP_RECAPTCHA) return Promise.resolve()
   if (scriptPromise) return scriptPromise
   scriptPromise = new Promise((resolve, reject) => {
     const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY
@@ -26,7 +31,18 @@ function loadScript(): Promise<void> {
   return scriptPromise
 }
 
+/**
+ * Precarga el script de reCAPTCHA en background. Llamar desde `onMounted` de
+ * LoginView para que cuando el usuario haga submit ya esté listo (en prod).
+ * En dev es no-op.
+ */
+export function preloadRecaptcha(): void {
+  if (SKIP_RECAPTCHA) return
+  loadScript().catch(() => { /* silencioso — si falla, fallará igual en submit */ })
+}
+
 export async function getRecaptchaToken(action = 'login'): Promise<string> {
+  if (SKIP_RECAPTCHA) return 'dev-bypass'
   await loadScript()
 
   return new Promise((resolve, reject) => {
