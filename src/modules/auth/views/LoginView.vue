@@ -55,11 +55,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/auth.store'
-import { getRecaptchaToken } from '@core/utils/recaptcha'
+import { getRecaptchaToken, preloadRecaptcha } from '@core/utils/recaptcha'
 import { notifySuccess } from '@core/utils/notify'
+
+// Precarga el script de reCAPTCHA en background al montar la vista
+// (en dev es no-op; en prod ahorra ~1-2 s al submit).
+onMounted(() => {
+  preloadRecaptcha()
+})
 
 const email = ref('')
 const password = ref('')

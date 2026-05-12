@@ -41,6 +41,11 @@ export const useBusinessStore = defineStore('business', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  // Promesa en vuelo de fetchAll: si varios componentes piden los negocios al
+  // mismo tiempo (AppSidebar y BusinessSwitcher al cargar /dashboard), reciben
+  // todos la MISMA petición HTTP en lugar de duplicarla.
+  let fetchAllInFlight: Promise<void> | null = null
+
   const currentBusinessId = computed(() => currentBusiness.value?.id ?? null)
   const hasBusinesses = computed(() => businesses.value.length > 0)
 
@@ -68,20 +73,28 @@ export const useBusinessStore = defineStore('business', () => {
   }
 
   async function fetchAll(): Promise<void> {
+    // Dedup: si ya hay una petición en curso, reusar.
+    if (fetchAllInFlight) return fetchAllInFlight
+    // Cache simple: si ya cargamos al menos un negocio, no re-disparar.
+    if (businesses.value.length > 0) return
+
     loading.value = true
     error.value = null
-    try {
-      businesses.value = await service.fetchBusinesses()
-      // Si no hay current, intenta tomar el primero como activo por defecto.
-      if (!currentBusiness.value && businesses.value.length > 0) {
-        currentBusiness.value = businesses.value[0]
-        persistCurrent(currentBusiness.value)
+    fetchAllInFlight = (async () => {
+      try {
+        businesses.value = await service.fetchBusinesses()
+        if (!currentBusiness.value && businesses.value.length > 0) {
+          currentBusiness.value = businesses.value[0]
+          persistCurrent(currentBusiness.value)
+        }
+      } catch (err: unknown) {
+        _captureError(err, 'Error al cargar negocios')
+      } finally {
+        loading.value = false
+        fetchAllInFlight = null
       }
-    } catch (err: unknown) {
-      _captureError(err, 'Error al cargar negocios')
-    } finally {
-      loading.value = false
-    }
+    })()
+    return fetchAllInFlight
   }
 
   async function create(payload: BusinessCreatePayload): Promise<BusinessRecord | null> {
