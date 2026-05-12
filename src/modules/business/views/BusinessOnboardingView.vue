@@ -109,7 +109,7 @@ const validations = {
   email: { email: helpers.withMessage('Email inválido', emailValidator) },
 }
 
-const v$ = useVuelidate(validations, form)
+const v$ = useVuelidate(validations, form as unknown as { name: string; email: string })
 
 const errors = computed(() => ({
   name: v$.value.name.$errors.map((e) => String(e.$message)),
