@@ -1,3 +1,5 @@
-// Módulo Subscription — preparado para futuro billing y manejo de planes.
-// Cuando se implemente, exportará store, routes, y vistas.
-export {}
+export { default as routes } from './routes'
+export { useSubscriptionStore } from './stores/subscriptionStore'
+export * as planService from './services/planService'
+export * as subscriptionService from './services/subscriptionService'
+export * from './types/subscription.types'

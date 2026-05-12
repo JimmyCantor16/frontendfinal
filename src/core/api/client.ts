@@ -33,11 +33,37 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    if (status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       localStorage.removeItem('business')
       window.location.href = '/login'
+    } else if (status === 402) {
+      // Payment required — suscripción vencida o ausente
+      try {
+        // Lazy import to avoid circular dependency at module load
+        import('@core/utils/notify').then(({ notifyError }) => {
+          const msg = err.response?.data?.message
+            ?? 'Tu suscripción está vencida. Renueva tu plan para continuar.'
+          notifyError('Suscripción requerida', String(msg))
+        }).catch(() => { /* notify unavailable */ })
+        if (typeof window !== 'undefined' && window.location.pathname !== '/plans') {
+          window.location.href = '/plans'
+        }
+      } catch {
+        // ignore
+      }
+    } else if (status === 403) {
+      try {
+        import('@core/utils/notify').then(({ notifyError }) => {
+          const msg = err.response?.data?.message
+            ?? 'Tu plan no incluye esta función'
+          notifyError('Acceso denegado', String(msg))
+        }).catch(() => { /* notify unavailable */ })
+      } catch {
+        // ignore
+      }
     }
     return Promise.reject(err)
   }

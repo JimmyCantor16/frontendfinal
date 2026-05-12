@@ -14,6 +14,8 @@
 
     <v-spacer />
 
+    <BusinessSwitcher />
+
     <v-btn
       v-if="isInPos"
       color="white"
@@ -55,6 +57,9 @@
           </v-list-item-subtitle>
         </v-list-item>
         <v-divider />
+        <v-list-item prepend-icon="mdi-credit-card-check" to="/subscription">
+          <v-list-item-title>Mi suscripción</v-list-item-title>
+        </v-list-item>
         <v-list-item prepend-icon="mdi-cog" to="/settings">
           <v-list-item-title>Configuración</v-list-item-title>
         </v-list-item>
@@ -70,6 +75,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@modules/auth/store/auth.store'
+import BusinessSwitcher from '@modules/business/components/BusinessSwitcher.vue'
 
 const authStore = useAuthStore()
 const route = useRoute()

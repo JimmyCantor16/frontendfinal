@@ -21,6 +21,8 @@ import adminRoutes from '@modules/admin/routes'
 import cashRegisterRoutes from '@modules/cash-register/routes'
 import reportsRoutes from '@modules/reports/routes'
 import settingsRoutes from '@modules/settings/routes'
+import subscriptionRoutes from '@modules/subscription/routes'
+import { routes as businessRoutes } from '@modules/business/routes'
 
 const routes: RouteRecordRaw[] = [
   ...authRoutes,
@@ -34,6 +36,8 @@ const routes: RouteRecordRaw[] = [
   ...cashRegisterRoutes,
   ...reportsRoutes,
   ...settingsRoutes,
+  ...subscriptionRoutes,
+  ...businessRoutes,
   {
     path: '/:pathMatch(.*)*',
     redirect: () => {

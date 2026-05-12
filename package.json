@@ -11,7 +11,11 @@
     "test:coverage": "vitest run --coverage",
     "testcafe:dev": "testcafe chrome tests/e2e/",
     "testcafe:run": "testcafe chrome:headless tests/e2e/",
-    "test:e2e": "testcafe chrome:headless tests/e2e/"
+    "test:e2e:testcafe": "testcafe chrome:headless tests/e2e/",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -30,6 +34,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@playwright/test": "^1.60.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-vue": "^6.0.4",

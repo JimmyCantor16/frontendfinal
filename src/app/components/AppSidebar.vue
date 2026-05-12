@@ -72,9 +72,25 @@
           Admin
         </v-list-subheader>
         <v-list-item prepend-icon="mdi-account-cog" title="Usuarios" to="/users" active-color="primary" />
+        <v-list-item
+          v-if="isBusinessOwner"
+          prepend-icon="mdi-store-cog"
+          title="Negocios"
+          to="/businesses"
+          active-color="primary"
+        />
       </template>
 
       <v-divider class="my-2" />
+
+      <!-- Suscripción (admin only) -->
+      <v-list-item
+        v-if="isAdmin"
+        prepend-icon="mdi-credit-card-check"
+        title="Suscripción"
+        to="/subscription"
+        active-color="primary"
+      />
 
       <!-- Configuración -->
       <v-list-item prepend-icon="mdi-cog" title="Configuración" to="/settings" active-color="primary" />
@@ -83,13 +99,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAuthStore } from '@modules/auth/store/auth.store'
+import { useBusinessStore } from '@modules/business/stores/businessStore'
 
 const authStore = useAuthStore()
+const businessStore = useBusinessStore()
 const userRole = computed(() => (authStore.user?.role ?? '').toLowerCase())
 const isAdmin = computed(() => !userRole.value || userRole.value === 'admin')
 const canOperate = computed(() => !userRole.value || userRole.value === 'admin' || userRole.value === 'cajero')
+
+// Mostrar "Negocios" solo si el usuario es owner de al menos un negocio.
+const currentUserId = computed(() => authStore.user?.id ?? null)
+const isBusinessOwner = computed(() => {
+  if (!currentUserId.value) return false
+  return businessStore.businesses.some((b) => b.owner_user_id === currentUserId.value)
+})
+
+onMounted(() => {
+  if (authStore.isAuthenticated && businessStore.businesses.length === 0) {
+    businessStore.fetchAll()
+  }
+})
 
 defineProps<{
   modelValue: boolean

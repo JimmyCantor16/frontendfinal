@@ -1,22 +1,39 @@
-// Tipos del dominio Subscription para futuro billing y manejo de planes.
+// Tipos del dominio Subscription — alineados con backend Laravel + Stripe Cashier.
+
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'past_due' | 'incomplete' | 'unpaid'
+
+export type BillingInterval = 'day' | 'week' | 'month' | 'year'
 
 export interface Plan {
-  id: string
+  id: number | string
   name: string
-  tier: 'free' | 'starter' | 'pro' | 'enterprise'
-  price_monthly: number
-  price_yearly: number
+  slug: string
+  price_cents: number
+  currency: string
+  interval: BillingInterval | string
+  stripe_price_id: string
   features: string[]
+  active: boolean
 }
 
-export interface SubscriptionInfo {
-  plan: Plan
-  status: 'active' | 'trial' | 'past_due' | 'cancelled'
-  current_period_end: string
-  cancel_at_period_end: boolean
+export interface Subscription {
+  id: number | string
+  plan_id?: number | string
+  plan?: Plan
+  status: SubscriptionStatus | string
+  current_period_end?: string | null
+  trial_ends_at?: string | null
+  ends_at?: string | null
+  cancel_at_period_end?: boolean
+  stripe_id?: string
+  stripe_status?: string
+  stripe_price?: string
 }
 
-export interface ChangePlanPayload {
-  plan_id: string
-  billing_period: 'monthly' | 'yearly'
+export interface CheckoutResponse {
+  checkout_url: string
+}
+
+export interface CheckoutPayload {
+  plan_id: number | string
 }
