@@ -55,6 +55,13 @@
         </v-card-title>
         <v-form @submit.prevent="save">
           <v-text-field v-model="form.sku" label="SKU" :rules="[r => !!r || 'Requerido']" class="mb-2" />
+          <v-text-field
+            v-model="form.barcode"
+            label="Código de Barras (EAN/UPC)"
+            hint="Opcional — escaneable desde el POS"
+            persistent-hint
+            class="mb-2"
+          />
           <v-text-field v-model="form.name" label="Nombre" :rules="[r => !!r || 'Requerido']" class="mb-2" />
           <v-textarea v-model="form.description" label="Descripción" rows="2" class="mb-2" />
           <v-select
@@ -176,7 +183,7 @@ const {
   endpoint: '/products',
   entityName: 'Producto',
   defaultForm: () => ({
-    sku: '', name: '', description: '', category_id: '',
+    sku: '', barcode: '', name: '', description: '', category_id: '',
     purchase_price: 0, sale_price: 0, stock: 0, minimum_stock: 0, is_active: true,
   }),
   searchFilter: (item, q) =>
@@ -196,6 +203,7 @@ const tableItems = computed(() => {
 function onEdit(p: Product) {
   editItem(p, (prod) => ({
     sku: prod.sku,
+    barcode: prod.barcode || '',
     name: prod.name,
     description: prod.description || '',
     category_id: prod.category_id || '',

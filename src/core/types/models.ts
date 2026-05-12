@@ -98,6 +98,7 @@ export interface Client {
 export interface Product {
   id: number
   sku: string
+  barcode?: string | null
   name: string
   description?: string
   category_id: number
@@ -190,6 +191,8 @@ export interface Invoice {
   invoice_number?: string
   client_id: number
   client?: Client
+  user_id?: number
+  user?: User
   status: InvoiceStatus
   subtotal: number
   tax: number
